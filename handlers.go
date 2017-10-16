@@ -119,7 +119,7 @@ func authenticate(w http.ResponseWriter, r *http.Request) {
 
 	ar := AuthResponse{
 	    tokenString,
-        ServerResponse{true, ""},
+        &ServerResponse{true, ""},
     }
 
 	jwtAuth, err := json.Marshal(ar)

@@ -9,6 +9,7 @@ import (
     jwtPkg "github.com/dgrijalva/jwt-go"
     "regexp"
     "github.com/dgrijalva/jwt-go/request"
+    "github.com/gin-gonic/gin/json"
 )
 
 type authProtector struct {
@@ -127,7 +128,7 @@ func (jwt *JwtAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     }
 
     // parse jwt token
-    _, err := request.ParseFromRequest(r, request.OAuth2Extractor, func(token *jwtPkg.Token) (interface{}, error) {
+    bearer, err := request.ParseFromRequest(r, request.OAuth2Extractor, func(token *jwtPkg.Token) (interface{}, error) {
         b := []byte(appJwtSecret)
         return b, nil
     })
@@ -136,6 +137,15 @@ func (jwt *JwtAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         http.Error(w, err.Error(), http.StatusUnauthorized)
         return
     }
+
+    jb, err := json.Marshal(bearer)
+    if err != nil {
+        http.Error(w, "Error marshal bearer", http.StatusInternalServerError)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.Write(jb)
 
     jwt.next.ServeHTTP(w, r)
 }

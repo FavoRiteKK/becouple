@@ -4,10 +4,10 @@ package main
 
 type ServerResponse struct {
     Success bool    `json:"success"`
-    Err string      `json:"err"`
+    Err string      `json:"err,omitempty"`
 }
 
 type AuthResponse struct {
     Jwt string      `json:"token"`
-    ServerResponse
+    *ServerResponse
 }
