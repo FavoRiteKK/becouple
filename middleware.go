@@ -6,6 +6,9 @@ import (
 	"net/http"
 
 	"github.com/justinas/nosurf"
+    jwtPkg "github.com/dgrijalva/jwt-go"
+    "regexp"
+    "github.com/dgrijalva/jwt-go/request"
 )
 
 type authProtector struct {
@@ -69,3 +72,73 @@ func logger(h http.Handler) http.Handler {
 		h.ServeHTTP(w, r)
 	})
 }
+
+func jwtMiddleware() func(next http.Handler) http.Handler {
+    return func(next http.Handler) http.Handler {
+        jwtAuth := NewJwtAuth(next)
+
+        // regex to check if route contains '/api/'
+        // if it does, the middleware would check jwt token
+        regex := regexp.MustCompile("/api/")
+
+        jwtAuth.token = jwtPkg.New(appJwtSigningMethod)
+        jwtAuth.next = next
+        jwtAuth.except = func(r *http.Request) bool {
+            path := r.URL.Path
+
+            // exempt this exactly path
+            if path == "/api/auth" {
+                return true
+            }
+
+            return !regex.MatchString(path)
+        }
+        return jwtAuth
+    }
+}
+
+//////////////////////////////////////////////////
+// jwtAuth middleware
+//////////////////////////////////////////////////
+var (
+    appJwtSigningMethod = jwtPkg.SigningMethodHS256
+    appJwtSecret = "qweasd123"
+)
+
+type JwtAuth struct {
+    token *jwtPkg.Token
+	next http.Handler
+	// method to parse request, return true if request should be skipped for jwt token validation
+	except func(r *http.Request) bool
+}
+
+func NewJwtAuth(next http.Handler) *JwtAuth {
+    jwtToken := &JwtAuth{}
+
+    return jwtToken
+}
+
+func (jwt *JwtAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+    // if except function return true for the request, then skip check jwt token
+    if jwt.except(r) {
+        jwt.next.ServeHTTP(w, r)
+        return
+    }
+
+    // parse jwt token
+    _, err := request.ParseFromRequest(r, request.OAuth2Extractor, func(token *jwtPkg.Token) (interface{}, error) {
+        b := []byte(appJwtSecret)
+        return b, nil
+    })
+
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusUnauthorized)
+        return
+    }
+
+    jwt.next.ServeHTTP(w, r)
+}
+
+//////////////////////////////////////////////////
+//////////////////////////////////////////////////

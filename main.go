@@ -30,6 +30,7 @@ import (
     "github.com/gorilla/sessions"
     "github.com/justinas/alice"
     "github.com/justinas/nosurf"
+    "strings"
 )
 
 var funcs = template.FuncMap{
@@ -131,10 +132,7 @@ func setupRouter() *mux.Router {
     })
 
     // Api Routes
-    apiRouter.HandleFunc("/auth", func(writer http.ResponseWriter, r *http.Request) {
-        fmt.Println("Insde /api/auth #2")
-        fmt.Println(base64.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(64)))
-    })
+    apiRouter.HandleFunc("/auth", authenticate).Methods("POST")
     apiRouter.HandleFunc("/logout", func(writer http.ResponseWriter, r *http.Request) {
         fmt.Println("Inside /api/logout?")
     })
@@ -186,7 +184,30 @@ func main() {
 
     // Set up our middleware chain
     // also, remove csrf validator for any route path that contains /api/
-    stack := alice.New(logger, nosurfing("/api/"), ab.ExpireMiddleware).Then(router)
+    stack := alice.New(logger,
+        nosurfing("/api/"),
+        jwtMiddleware(),
+        ab.ExpireMiddleware).Then(router)
+
+    // debug, list routes
+    router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+        t, err := route.GetPathTemplate()
+        if err != nil {
+            return err
+        }
+        // p will contain regular expression is compatible with regular expression in Perl, Python, and other languages.
+        // for instance the regular expression for path '/articles/{id}' will be '^/articles/(?P<v0>[^/]+)$'
+        p, err := route.GetPathRegexp()
+        if err != nil {
+            return err
+        }
+        m, err := route.GetMethods()
+        if err != nil {
+            return err
+        }
+        fmt.Println(strings.Join(m, ","), t, p)
+        return nil
+    })
 
     // Start the server
     log.Println(http.ListenAndServe(addr, stack))
