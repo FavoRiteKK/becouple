@@ -104,42 +104,7 @@ func setupAuthboss(addr string) {
     }
 }
 
-func main() {
-    // Initialize Sessions and Cookies
-    // Typically gorilla securecookie and sessions packages require
-    // highly random secret keys that are not divulged to the public.
-    //
-    // TODO In this example we use keys generated one time (if these keys ever become
-    // compromised the gorilla libraries allow for key rotation, see gorilla docs)
-    // The keys are 64-bytes as recommended for HMAC keys as per the gorilla docs.
-    //
-    // These values MUST be changed for any new project as these keys are already "compromised"
-    // as they're in the public domain, if you do not change these your application will have a fairly
-    // wide-opened security hole. You can generate your own with the code below, or using whatever method
-    // you prefer:
-    //
-    //    func main() {
-    //        fmt.Println(base64.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(64)))
-    //    }
-    //
-
-    // We store them in base64 in the example to make it easy if we wanted to move them later to
-    // a configuration environment var or file.
-    cookieStoreKey, _ := base64.StdEncoding.DecodeString(`2S+t+bu22ZxFbCW0eFtwYChptomzJrjSR82AI1t3hgpHgjWRFPCHcFELqJ/Au+WCvwauz2Vgf51cpgbwY5Jnsg==`)
-    sessionStoreKey, _ := base64.StdEncoding.DecodeString(`Ab5CP07McjLvEQvjmhZUyu3j7Dj2dCxDinbac89YAZXXc8RO9s/Sh8QSZwLrW0St0WazbWjFTA8kHdjXG3LXOQ==`)
-    cookieStore = securecookie.New(cookieStoreKey, nil)
-    sessionStore = sessions.NewCookieStore(sessionStoreKey)
-
-    // set address
-    port := os.Getenv("PORT")
-    if len(port) == 0 {
-        port = "8000"
-    }
-
-    addr := "localhost:" + port
-    // Initialize ab.
-    setupAuthboss(addr)
-
+func setupRouter() *mux.Router {
     // Set up our router
     schemaDec.IgnoreUnknownKeys(true)
     router := mux.NewRouter()
@@ -174,6 +139,51 @@ func main() {
     apiRouter.HandleFunc("/logout", func(writer http.ResponseWriter, r *http.Request) {
         fmt.Println("Inside /api/logout?")
     })
+
+    return router
+}
+
+func setupStore() {
+    // Initialize Sessions and Cookies
+    // Typically gorilla securecookie and sessions packages require
+    // highly random secret keys that are not divulged to the public.
+    //
+    // TODO In this example we use keys generated one time (if these keys ever become
+    // compromised the gorilla libraries allow for key rotation, see gorilla docs)
+    // The keys are 64-bytes as recommended for HMAC keys as per the gorilla docs.
+    //
+    // These values MUST be changed for any new project as these keys are already "compromised"
+    // as they're in the public domain, if you do not change these your application will have a fairly
+    // wide-opened security hole. You can generate your own with the code below, or using whatever method
+    // you prefer:
+    //
+    //    func main() {
+    //        fmt.Println(base64.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(64)))
+    //    }
+    //
+
+    // We store them in base64 in the example to make it easy if we wanted to move them later to
+    // a configuration environment var or file.
+    cookieStoreKey, _ := base64.StdEncoding.DecodeString(`2S+t+bu22ZxFbCW0eFtwYChptomzJrjSR82AI1t3hgpHgjWRFPCHcFELqJ/Au+WCvwauz2Vgf51cpgbwY5Jnsg==`)
+    sessionStoreKey, _ := base64.StdEncoding.DecodeString(`Ab5CP07McjLvEQvjmhZUyu3j7Dj2dCxDinbac89YAZXXc8RO9s/Sh8QSZwLrW0St0WazbWjFTA8kHdjXG3LXOQ==`)
+    cookieStore = securecookie.New(cookieStoreKey, nil)
+    sessionStore = sessions.NewCookieStore(sessionStoreKey)
+}
+
+func main() {
+    setupStore()
+
+    // set address
+    port := os.Getenv("PORT")
+    if len(port) == 0 {
+        port = "8000"
+    }
+
+    addr := "localhost:" + port
+    // Initialize ab.
+    setupAuthboss(addr)
+
+    router := setupRouter()
 
     // Set up our middleware chain
     // also, remove csrf validator for any route path that contains /api/
