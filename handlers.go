@@ -8,11 +8,13 @@ import (
     "log"
 )
 
+// route '/', '/blogs'
 func index(w http.ResponseWriter, r *http.Request) {
     data := layoutData(w, r).MergeKV("posts", blogs)
     mustRender(w, r, "index", data)
 }
 
+// route '/blogs/new
 func newblog(w http.ResponseWriter, r *http.Request) {
     data := layoutData(w, r).MergeKV("post", Blog{})
     mustRender(w, r, "new", data)
@@ -20,6 +22,7 @@ func newblog(w http.ResponseWriter, r *http.Request) {
 
 var nextID = len(blogs) + 1
 
+// route /blogs/new
 func create(w http.ResponseWriter, r *http.Request) {
     err := r.ParseForm()
     if badRequest(w, err) {
@@ -43,6 +46,7 @@ func create(w http.ResponseWriter, r *http.Request) {
     http.Redirect(w, r, "/", http.StatusFound)
 }
 
+// route '/blogs/{id}/edit'
 func edit(w http.ResponseWriter, r *http.Request) {
     id, ok := blogID(w, r)
     if !ok {
@@ -53,6 +57,7 @@ func edit(w http.ResponseWriter, r *http.Request) {
     mustRender(w, r, "edit", data)
 }
 
+// route '/blogs/{id}/edit'
 func update(w http.ResponseWriter, r *http.Request) {
     err := r.ParseForm()
     if badRequest(w, err) {
@@ -76,6 +81,7 @@ func update(w http.ResponseWriter, r *http.Request) {
     http.Redirect(w, r, "/", http.StatusFound)
 }
 
+// route '/blogs/{id}/destroy'
 func destroy(w http.ResponseWriter, r *http.Request) {
     id, ok := blogID(w, r)
     if !ok {
