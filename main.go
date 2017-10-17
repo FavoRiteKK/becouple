@@ -33,6 +33,7 @@ import (
 	//"net/smtp"
 	"strings"
 	"net/smtp"
+    "regexp"
 )
 
 var funcs = template.FuncMap{
@@ -91,17 +92,20 @@ func setupAuthboss(addr string) {
 	ab.Mailer = authboss.SMTPMailer("smtp.gmail.com:587",
 		smtp.PlainAuth("", ab.EmailFrom, smtpGMailPass, "smtp.gmail.com"))
 
+    // TODO may change these when go production
 	ab.Policies = []authboss.Validator{
 		authboss.Rules{
 			FieldName:       "email",
 			Required:        true,
+			MustMatch:       regexp.MustCompile(`^\S+@\S+$`),
+			MatchError:      "Not an email address",
 			AllowWhitespace: false,
 		},
 		authboss.Rules{
 			FieldName:       "password",
 			Required:        true,
-			MinLength:       4,
-			MaxLength:       8,
+			MinLength:       8,
+			MaxLength:       16,
 			AllowWhitespace: false,
 		},
 	}
