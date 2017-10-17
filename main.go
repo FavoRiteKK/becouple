@@ -133,16 +133,16 @@ func setupRouter() *mux.Router {
 	// destroy link using javascript atm.
 	webRouter.Handle("/blogs/{id}/destroy", authProtect(destroy)).Methods("POST")
 
-	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-		io.WriteString(w, "Not found")
-	})
-
 	// Api Routes
 	apiRouter.HandleFunc("/auth", authenticate).Methods("POST")
 	apiRouter.HandleFunc("/logout", func(writer http.ResponseWriter, r *http.Request) {
 		fmt.Println("Inside /api/logout?")
 
+	})
+
+	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		io.WriteString(w, "No such resource exists")
 	})
 
 	return router
