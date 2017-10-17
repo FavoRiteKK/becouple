@@ -1,6 +1,7 @@
 package main
 
 import (
+	"becouple/models"
 	jwtPkg "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin/json"
 	"github.com/gorilla/mux"
@@ -110,17 +111,17 @@ func authenticate(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Sign and get the complete encoded token as a string using the secret
-	tokenString, err := token.SignedString([]byte(appJwtSecret))    // must convert to []byte, otherwise we get error 'key is invalid'
+	tokenString, err := token.SignedString([]byte(appJwtSecret)) // must convert to []byte, otherwise we get error 'key is invalid'
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	ar := AuthResponse{
-	    tokenString,
-        &ServerResponse{true, ""},
-    }
+	ar := models.AuthResponse{
+		Jwt:            tokenString,
+		ServerResponse: &models.ServerResponse{Success: true},
+	}
 
 	jwtAuth, err := json.Marshal(ar)
 	if err != nil {
