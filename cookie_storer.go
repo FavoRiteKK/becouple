@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gorilla/securecookie"
-	"github.com/volatiletech/authboss"
+	"gopkg.in/authboss.v1"
 )
 
 var cookieStore *securecookie.SecureCookie

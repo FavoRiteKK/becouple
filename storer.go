@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/volatiletech/authboss"
+	"gopkg.in/authboss.v1"
 )
 
 var nextUserID int
