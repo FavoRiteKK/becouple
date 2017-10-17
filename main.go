@@ -47,7 +47,7 @@ var (
 	database      = NewMemStorer()
 	templates     = tpl.Must(tpl.Load("views", "views/partials", "layout.html.tpl", funcs))
 	schemaDec     = schema.NewDecoder()
-	smtpGmailPass = "qweasd1234"
+	smtpGMailPass = "qweasd1234"
 )
 
 func setupAuthboss(addr string) {
@@ -89,7 +89,7 @@ func setupAuthboss(addr string) {
 
 	//ab.Mailer = authboss.LogMailer(os.Stdout)
 	ab.Mailer = authboss.SMTPMailer("smtp.gmail.com:587",
-		smtp.PlainAuth("", ab.EmailFrom, smtpGmailPass, "smtp.gmail.com"))
+		smtp.PlainAuth("", ab.EmailFrom, smtpGMailPass, "smtp.gmail.com"))
 
 	ab.Policies = []authboss.Validator{
 		authboss.Rules{
