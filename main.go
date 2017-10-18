@@ -30,9 +30,8 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/justinas/alice"
 	"github.com/justinas/nosurf"
-	//"net/smtp"
 	"becouple/appvendor"
-	"net/smtp"
+	//"net/smtp"
 	"regexp"
 	"strings"
 )
@@ -49,7 +48,7 @@ var (
 	database      = NewMemStorer()
 	templates     = tpl.Must(tpl.Load("views", "views/partials", "layout.html.tpl", funcs))
 	schemaDec     = schema.NewDecoder()
-	smtpGMailPass = "qweasd1234"
+	//smtpGMailPass = "qweasd1234"
 )
 
 func setupAuthboss(addr string) {
@@ -89,9 +88,10 @@ func setupAuthboss(addr string) {
 
 	ab.EmailFrom = "khiemnv@rikkeisoft.com"
 
-	//ab.Mailer = authboss.LogMailer(os.Stdout)
-	ab.Mailer = authboss.SMTPMailer("smtp.gmail.com:587",
-		smtp.PlainAuth("", ab.EmailFrom, smtpGMailPass, "smtp.gmail.com"))
+	//TODO change to SMTPMailer in production
+	ab.Mailer = authboss.LogMailer(os.Stdout)
+	//ab.Mailer = authboss.SMTPMailer("smtp.gmail.com:587",
+	//	smtp.PlainAuth("", ab.EmailFrom, smtpGMailPass, "smtp.gmail.com"))
 
 	// TODO may change these when go production
 	ab.Policies = []authboss.Validator{
