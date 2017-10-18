@@ -12,16 +12,16 @@ import (
 	"path/filepath"
 	"time"
 
-    "gopkg.in/authboss.v1"
-    _ "gopkg.in/authboss.v1/auth"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"gopkg.in/authboss.v1"
+	_ "gopkg.in/authboss.v1/auth"
 	_ "gopkg.in/authboss.v1/confirm"
 	_ "gopkg.in/authboss.v1/lock"
 	aboauth "gopkg.in/authboss.v1/oauth2"
 	_ "gopkg.in/authboss.v1/recover"
 	_ "gopkg.in/authboss.v1/register"
 	_ "gopkg.in/authboss.v1/remember"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 
 	"github.com/aarondl/tpl"
 	"github.com/gorilla/mux"
@@ -31,9 +31,10 @@ import (
 	"github.com/justinas/alice"
 	"github.com/justinas/nosurf"
 	//"net/smtp"
-	"strings"
+	"becouple/appvendor"
 	"net/smtp"
-    "regexp"
+	"regexp"
+	"strings"
 )
 
 var funcs = template.FuncMap{
@@ -92,7 +93,7 @@ func setupAuthboss(addr string) {
 	ab.Mailer = authboss.SMTPMailer("smtp.gmail.com:587",
 		smtp.PlainAuth("", ab.EmailFrom, smtpGMailPass, "smtp.gmail.com"))
 
-    // TODO may change these when go production
+	// TODO may change these when go production
 	ab.Policies = []authboss.Validator{
 		authboss.Rules{
 			FieldName:       "email",
@@ -136,6 +137,10 @@ func setupRouter() *mux.Router {
 	// This should actually be a DELETE but I can't be bothered to make a proper
 	// destroy link using javascript atm.
 	webRouter.Handle("/blogs/{id}/destroy", authProtect(destroy)).Methods("POST")
+
+	webRouter.HandleFunc("/test", func(writer http.ResponseWriter, r *http.Request) {
+		appvendor.Mgr.GetAllUser()
+	}).Methods("GET")
 
 	// Api Routes
 	apiRouter.HandleFunc("/auth", authenticate).Methods("POST")
