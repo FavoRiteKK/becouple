@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
+    "time"
 )
 
 type Manager interface {
@@ -30,6 +31,11 @@ func init() {
 	if err != nil {
 		log.Fatal(err.Error()) // proper error handling instead of panic in your app
 	}
+
+	// set 5 minutes long lived connection
+	db.SetConnMaxLifetime(time.Minute * 5)
+	db.SetMaxIdleConns(0)
+	db.SetMaxOpenConns(5)
 
 	Mgr = &manager{db: db}
 }
