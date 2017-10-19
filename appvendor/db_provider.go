@@ -4,20 +4,19 @@ import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
-    "time"
+	"time"
 )
 
-type Manager interface {
-	//AddArticle(article *article.Article) error
-	GetAllUser() error
+type DBManager interface {
 	// Add other methods
+	GetUserByEmail(email string) (*sql.Row, error)
 }
 
 type manager struct {
 	db *sql.DB
 }
 
-var Mgr Manager
+var DBHelper DBManager
 
 func init() {
 	// open global database handler
@@ -37,24 +36,17 @@ func init() {
 	db.SetMaxIdleConns(0)
 	db.SetMaxOpenConns(5)
 
-	Mgr = &manager{db: db}
+	DBHelper = &manager{db: db}
 }
 
-//func (mgr *manager) AddArticle(article *article.Article) (err error) {
-//    mgr.db.Create(article)
-//    if errs := mgr.db.GetErrors(); len(errs) > 0 {
-//        err = errs[0]
-//    }
-//    return
-//}
+func (mgr *manager) GetUserByEmail(email string) (*sql.Row, error) {
+	stmt, err := mgr.db.Prepare("SELECT `user_id`, `email`, `password` FROM `user` WHERE email = ? LIMIT 1")
+	defer stmt.Close()
 
-func (mgr *manager) GetAllUser() error {
-	result, err := mgr.db.Exec("SELECT * FROM `user`")
 	if err != nil {
-		log.Fatal(err.Error())
-		return err
+		return nil, err
 	}
 
-	log.Println(result.RowsAffected())
-	return nil
+	row := stmt.QueryRow(email)
+	return row, nil
 }

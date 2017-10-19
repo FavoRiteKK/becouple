@@ -23,6 +23,7 @@ import (
 	_ "gopkg.in/authboss.v1/register"
 	_ "gopkg.in/authboss.v1/remember"
 
+	"becouple/appvendor"
 	"github.com/aarondl/tpl"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
@@ -30,7 +31,6 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/justinas/alice"
 	"github.com/justinas/nosurf"
-	"becouple/appvendor"
 	//"net/smtp"
 	"regexp"
 	"strings"
@@ -44,10 +44,10 @@ var funcs = template.FuncMap{
 }
 
 var (
-	ab            = authboss.New()
-	database      = NewMemStorer()
-	templates     = tpl.Must(tpl.Load("views", "views/partials", "layout.html.tpl", funcs))
-	schemaDec     = schema.NewDecoder()
+	ab        = authboss.New()
+	database  = appvendor.NewMySQLStorer()
+	templates = tpl.Must(tpl.Load("views", "views/partials", "layout.html.tpl", funcs))
+	schemaDec = schema.NewDecoder()
 	//smtpGMailPass = "qweasd1234"
 )
 
@@ -63,8 +63,8 @@ func setupAuthboss(addr string) {
 	ab.OAuth2Providers = map[string]authboss.OAuth2Provider{
 		"google": authboss.OAuth2Provider{
 			OAuth2Config: &oauth2.Config{
-				ClientID:     ``,
-				ClientSecret: ``,
+				ClientID:     `751571472928-qfal1af5cn6ipstg8tl56rm0cncst9lv.apps.googleusercontent.com`,
+				ClientSecret: `n5KWzxPao29Z1EzcCGCFmjHS`,
 				Scopes:       []string{`profile`, `email`},
 				Endpoint:     google.Endpoint,
 			},
@@ -139,7 +139,7 @@ func setupRouter() *mux.Router {
 	webRouter.Handle("/blogs/{id}/destroy", authProtect(destroy)).Methods("POST")
 
 	webRouter.HandleFunc("/test", func(writer http.ResponseWriter, r *http.Request) {
-		appvendor.Mgr.GetAllUser()
+		appvendor.DBHelper.GetUserByEmail("qwe@gmail.com")
 	}).Methods("GET")
 
 	// Api Routes
