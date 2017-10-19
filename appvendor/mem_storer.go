@@ -12,7 +12,7 @@ import (
 
 var nextUserID int
 
-type User struct {
+type AuthUser struct {
 	ID   int
 	Name string
 
@@ -44,14 +44,14 @@ type User struct {
 }
 
 type AuthStorer struct {
-	Users  map[string]User
+	Users  map[string]AuthUser
 	Tokens map[string][]string
 }
 
 func NewAuthStorer() *AuthStorer {
 	return &AuthStorer{
-		Users: map[string]User{
-			"zeratul@heroes.com": User{
+		Users: map[string]AuthUser{
+			"zeratul@heroes.com": AuthUser{
 				ID:        1,
 				Name:      "Zeratul",
 				Password:  "$2a$10$XtW/BrS5HeYIuOCXYe8DFuInetDMdaarMUJEOg/VA/JAIDgw3l4aG", // pass = 1234
@@ -64,7 +64,7 @@ func NewAuthStorer() *AuthStorer {
 }
 
 func (s AuthStorer) Create(key string, attr authboss.Attributes) error {
-	var user User
+	var user AuthUser
 	if err := attr.Bind(&user, true); err != nil {
 		return err
 	}

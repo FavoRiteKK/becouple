@@ -5,7 +5,39 @@ package appvendor
 import (
 	"gopkg.in/authboss.v1"
 	"log"
+    "time"
 )
+
+type AuthUser struct {
+    ID   int
+    Name string
+
+    // Auth
+    Email    string
+    Password string
+
+    // OAuth2
+    Oauth2Uid      string
+    Oauth2Provider string
+    Oauth2Token    string
+    Oauth2Refresh  string
+    Oauth2Expiry   time.Time
+
+    // Confirm
+    ConfirmToken string
+    Confirmed    bool
+
+    // Lock
+    AttemptNumber int64
+    AttemptTime   time.Time
+    Locked        time.Time
+
+    // Recover
+    RecoverToken       string
+    RecoverTokenExpiry time.Time
+
+    // Remember is in another table
+}
 
 type AuthStorer struct {
 	dbHelper DBManager
@@ -16,7 +48,7 @@ func NewAuthStorer() *AuthStorer {
 }
 
 func (s AuthStorer) Create(key string, attr authboss.Attributes) error {
-	var user User
+	var user AuthUser
 	if err := attr.Bind(&user, true); err != nil {
 		return err
 	}
@@ -35,7 +67,7 @@ func (s AuthStorer) Get(key string) (result interface{}, err error) {
 		return nil, err
 	}
 
-	var user User
+	var user AuthUser
 
 	err = row.Scan(&user.ID, &user.Email, &user.Password)
 	if err != nil {
