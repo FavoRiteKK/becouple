@@ -45,7 +45,7 @@ var funcs = template.FuncMap{
 
 var (
 	ab        = authboss.New()
-	database  = appvendor.NewMySQLStorer()
+	database  = appvendor.NewAuthStorer()
 	templates = tpl.Must(tpl.Load("views", "views/partials", "layout.html.tpl", funcs))
 	schemaDec = schema.NewDecoder()
 	//smtpGMailPass = "qweasd1234"
@@ -83,8 +83,8 @@ func setupAuthboss(addr string) {
 		return nosurf.Token(r)
 	}
 
-	ab.CookieStoreMaker = NewCookieStorer
-	ab.SessionStoreMaker = NewSessionStorer
+	ab.CookieStoreMaker = appvendor.NewCookieStorer
+	ab.SessionStoreMaker = appvendor.NewSessionStorer
 
 	ab.EmailFrom = "khiemnv@rikkeisoft.com"
 
@@ -180,8 +180,8 @@ func setupStore() {
 	// a configuration environment var or file.
 	cookieStoreKey, _ := base64.StdEncoding.DecodeString(`2S+t+bu22ZxFbCW0eFtwYChptomzJrjSR82AI1t3hgpHgjWRFPCHcFELqJ/Au+WCvwauz2Vgf51cpgbwY5Jnsg==`)
 	sessionStoreKey, _ := base64.StdEncoding.DecodeString(`Ab5CP07McjLvEQvjmhZUyu3j7Dj2dCxDinbac89YAZXXc8RO9s/Sh8QSZwLrW0St0WazbWjFTA8kHdjXG3LXOQ==`)
-	cookieStore = securecookie.New(cookieStoreKey, nil)
-	sessionStore = sessions.NewCookieStore(sessionStoreKey)
+	appvendor.CookieStore = securecookie.New(cookieStoreKey, nil)
+	appvendor.SessionStore = sessions.NewCookieStore(sessionStoreKey)
 }
 
 func main() {
@@ -234,7 +234,7 @@ func layoutData(w http.ResponseWriter, r *http.Request) authboss.HTMLData {
 	currentUserName := ""
 	userInter, err := ab.CurrentUser(w, r)
 	if userInter != nil && err == nil {
-		currentUserName = userInter.(*User).Name
+		currentUserName = userInter.(*appvendor.User).Name
 	}
 
 	return authboss.HTMLData{

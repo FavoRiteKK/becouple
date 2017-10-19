@@ -9,7 +9,7 @@ import (
 	"gopkg.in/authboss.v1"
 )
 
-var cookieStore *securecookie.SecureCookie
+var CookieStore *securecookie.SecureCookie
 
 type CookieStorer struct {
 	w http.ResponseWriter
@@ -27,7 +27,7 @@ func (s CookieStorer) Get(key string) (string, bool) {
 	}
 
 	var value string
-	err = cookieStore.Decode(key, cookie.Value, &value)
+	err = CookieStore.Decode(key, cookie.Value, &value)
 	if err != nil {
 		return "", false
 	}
@@ -36,7 +36,7 @@ func (s CookieStorer) Get(key string) (string, bool) {
 }
 
 func (s CookieStorer) Put(key, value string) {
-	encoded, err := cookieStore.Encode(key, value)
+	encoded, err := CookieStore.Encode(key, value)
 	if err != nil {
 		fmt.Println(err)
 	}

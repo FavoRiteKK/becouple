@@ -10,6 +10,7 @@ import (
     "regexp"
     "github.com/dgrijalva/jwt-go/request"
     "github.com/gin-gonic/gin/json"
+	"becouple/appvendor"
 )
 
 type authProtector struct {
@@ -52,7 +53,7 @@ func nosurfing(exemptedRegex interface{}) func(h http.Handler) http.Handler {
 func logger(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("\n%s %s %s\n", r.Method, r.URL.Path, r.Proto)
-		session, err := sessionStore.Get(r, sessionCookieName)
+		session, err := appvendor.SessionStore.Get(r, appvendor.SessionCookieName)
 		if err == nil {
 			fmt.Print("Session: ")
 			first := true
@@ -76,7 +77,7 @@ func logger(h http.Handler) http.Handler {
 
 func jwtMiddleware() func(next http.Handler) http.Handler {
     return func(next http.Handler) http.Handler {
-        jwtAuth := NewJwtAuth(next)
+        jwtAuth := NewJwtAuth()
 
         // regex to check if route contains '/api/'
         // if it does, the middleware would check jwt token
@@ -113,7 +114,7 @@ type JwtAuth struct {
 	except func(r *http.Request) bool
 }
 
-func NewJwtAuth(next http.Handler) *JwtAuth {
+func NewJwtAuth() *JwtAuth {
     jwtToken := &JwtAuth{}
 
     return jwtToken

@@ -8,9 +8,9 @@ import (
 	"gopkg.in/authboss.v1"
 )
 
-const sessionCookieName = "ab_blog"
+const SessionCookieName = "ab_blog"
 
-var sessionStore *sessions.CookieStore
+var SessionStore *sessions.CookieStore
 
 type SessionStorer struct {
 	w http.ResponseWriter
@@ -22,7 +22,7 @@ func NewSessionStorer(w http.ResponseWriter, r *http.Request) authboss.ClientSto
 }
 
 func (s SessionStorer) Get(key string) (string, bool) {
-	session, err := sessionStore.Get(s.r, sessionCookieName)
+	session, err := SessionStore.Get(s.r, SessionCookieName)
 	if err != nil {
 		fmt.Println(err)
 		return "", false
@@ -42,7 +42,7 @@ func (s SessionStorer) Get(key string) (string, bool) {
 }
 
 func (s SessionStorer) Put(key, value string) {
-	session, err := sessionStore.Get(s.r, sessionCookieName)
+	session, err := SessionStore.Get(s.r, SessionCookieName)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -53,7 +53,7 @@ func (s SessionStorer) Put(key, value string) {
 }
 
 func (s SessionStorer) Del(key string) {
-	session, err := sessionStore.Get(s.r, sessionCookieName)
+	session, err := SessionStore.Get(s.r, SessionCookieName)
 	if err != nil {
 		fmt.Println(err)
 		return

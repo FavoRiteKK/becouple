@@ -1,3 +1,5 @@
+//+build USE_DB_AUTH_STORER
+
 package appvendor
 
 import (
@@ -5,15 +7,15 @@ import (
 	"log"
 )
 
-type MySQLStorer struct {
+type AuthStorer struct {
 	dbHelper DBManager
 }
 
-func NewMySQLStorer() *MySQLStorer {
-	return &MySQLStorer{DBHelper}
+func NewAuthStorer() *AuthStorer {
+	return &AuthStorer{DBHelper}
 }
 
-func (s MySQLStorer) Create(key string, attr authboss.Attributes) error {
+func (s AuthStorer) Create(key string, attr authboss.Attributes) error {
 	var user User
 	if err := attr.Bind(&user, true); err != nil {
 		return err
@@ -22,11 +24,11 @@ func (s MySQLStorer) Create(key string, attr authboss.Attributes) error {
 	return nil
 }
 
-func (s MySQLStorer) Put(key string, attr authboss.Attributes) error {
+func (s AuthStorer) Put(key string, attr authboss.Attributes) error {
 	return s.Create(key, attr)
 }
 
-func (s MySQLStorer) Get(key string) (result interface{}, err error) {
+func (s AuthStorer) Get(key string) (result interface{}, err error) {
 	row, err := s.dbHelper.GetUserByEmail(key)
 	if err != nil {
 		log.Print(err.Error())
@@ -45,30 +47,30 @@ func (s MySQLStorer) Get(key string) (result interface{}, err error) {
 
 }
 
-func (s MySQLStorer) PutOAuth(uid, provider string, attr authboss.Attributes) error {
+func (s AuthStorer) PutOAuth(uid, provider string, attr authboss.Attributes) error {
 	return s.Create(uid+provider, attr)
 }
 
-func (s MySQLStorer) GetOAuth(uid, provider string) (result interface{}, err error) {
+func (s AuthStorer) GetOAuth(uid, provider string) (result interface{}, err error) {
 	return nil, nil
 }
 
-func (s MySQLStorer) AddToken(key, token string) error {
+func (s AuthStorer) AddToken(key, token string) error {
 	return nil
 }
 
-func (s MySQLStorer) DelTokens(key string) error {
+func (s AuthStorer) DelTokens(key string) error {
 	return nil
 }
 
-func (s MySQLStorer) UseToken(givenKey, token string) error {
+func (s AuthStorer) UseToken(givenKey, token string) error {
 	return authboss.ErrTokenNotFound
 }
 
-func (s MySQLStorer) ConfirmUser(tok string) (result interface{}, err error) {
+func (s AuthStorer) ConfirmUser(tok string) (result interface{}, err error) {
 	return nil, authboss.ErrUserNotFound
 }
 
-func (s MySQLStorer) RecoverUser(rec string) (result interface{}, err error) {
+func (s AuthStorer) RecoverUser(rec string) (result interface{}, err error) {
 	return nil, authboss.ErrUserNotFound
 }

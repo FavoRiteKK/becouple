@@ -1,3 +1,5 @@
+//+build !USE_DB_AUTH_STORER
+
 package appvendor
 
 import (
@@ -41,13 +43,13 @@ type User struct {
 	// Remember is in another table
 }
 
-type MemStorer struct {
+type AuthStorer struct {
 	Users  map[string]User
 	Tokens map[string][]string
 }
 
-func NewMemStorer() *MemStorer {
-	return &MemStorer{
+func NewAuthStorer() *AuthStorer {
+	return &AuthStorer{
 		Users: map[string]User{
 			"zeratul@heroes.com": User{
 				ID:        1,
@@ -61,7 +63,7 @@ func NewMemStorer() *MemStorer {
 	}
 }
 
-func (s MemStorer) Create(key string, attr authboss.Attributes) error {
+func (s AuthStorer) Create(key string, attr authboss.Attributes) error {
 	var user User
 	if err := attr.Bind(&user, true); err != nil {
 		return err
@@ -76,11 +78,11 @@ func (s MemStorer) Create(key string, attr authboss.Attributes) error {
 	return nil
 }
 
-func (s MemStorer) Put(key string, attr authboss.Attributes) error {
+func (s AuthStorer) Put(key string, attr authboss.Attributes) error {
 	return s.Create(key, attr)
 }
 
-func (s MemStorer) Get(key string) (result interface{}, err error) {
+func (s AuthStorer) Get(key string) (result interface{}, err error) {
 	user, ok := s.Users[key]
 	if !ok {
 		return nil, authboss.ErrUserNotFound
@@ -89,11 +91,11 @@ func (s MemStorer) Get(key string) (result interface{}, err error) {
 	return &user, nil
 }
 
-func (s MemStorer) PutOAuth(uid, provider string, attr authboss.Attributes) error {
+func (s AuthStorer) PutOAuth(uid, provider string, attr authboss.Attributes) error {
 	return s.Create(uid+provider, attr)
 }
 
-func (s MemStorer) GetOAuth(uid, provider string) (result interface{}, err error) {
+func (s AuthStorer) GetOAuth(uid, provider string) (result interface{}, err error) {
 	user, ok := s.Users[uid+provider]
 	if !ok {
 		return nil, authboss.ErrUserNotFound
@@ -102,21 +104,21 @@ func (s MemStorer) GetOAuth(uid, provider string) (result interface{}, err error
 	return &user, nil
 }
 
-func (s MemStorer) AddToken(key, token string) error {
+func (s AuthStorer) AddToken(key, token string) error {
 	s.Tokens[key] = append(s.Tokens[key], token)
 	fmt.Println("AddToken")
 	spew.Dump(s.Tokens)
 	return nil
 }
 
-func (s MemStorer) DelTokens(key string) error {
+func (s AuthStorer) DelTokens(key string) error {
 	delete(s.Tokens, key)
 	fmt.Println("DelTokens")
 	spew.Dump(s.Tokens)
 	return nil
 }
 
-func (s MemStorer) UseToken(givenKey, token string) error {
+func (s AuthStorer) UseToken(givenKey, token string) error {
 	toks, ok := s.Tokens[givenKey]
 	if !ok {
 		return authboss.ErrTokenNotFound
@@ -133,7 +135,7 @@ func (s MemStorer) UseToken(givenKey, token string) error {
 	return authboss.ErrTokenNotFound
 }
 
-func (s MemStorer) ConfirmUser(tok string) (result interface{}, err error) {
+func (s AuthStorer) ConfirmUser(tok string) (result interface{}, err error) {
 	fmt.Println("==============", tok)
 
 	for _, u := range s.Users {
@@ -145,7 +147,7 @@ func (s MemStorer) ConfirmUser(tok string) (result interface{}, err error) {
 	return nil, authboss.ErrUserNotFound
 }
 
-func (s MemStorer) RecoverUser(rec string) (result interface{}, err error) {
+func (s AuthStorer) RecoverUser(rec string) (result interface{}, err error) {
 	for _, u := range s.Users {
 		if u.RecoverToken == rec {
 			return &u, nil
