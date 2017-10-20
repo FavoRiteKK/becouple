@@ -18,9 +18,10 @@ import (
 )
 
 type AppController struct {
-	app       *BeCoupleApp
-	decoder   *schema.Decoder
-	templates tpl.Templates
+	app        *BeCoupleApp
+	decoder    *schema.Decoder
+	templates  tpl.Templates
+	CsrfEnable bool
 }
 
 func NewController(app *BeCoupleApp) *AppController {
@@ -31,6 +32,8 @@ func NewController(app *BeCoupleApp) *AppController {
 	ctrl.decoder.IgnoreUnknownKeys(true)
 
 	ctrl.templates = tpl.Must(tpl.Load("views", "views/partials", "layout.html.tpl", funcs))
+
+	ctrl.CsrfEnable = true
 
 	return ctrl
 }
@@ -44,7 +47,7 @@ func (ctrl *AppController) index(w http.ResponseWriter, r *http.Request) {
 // route '/blogs/new
 func (ctrl *AppController) newblog(w http.ResponseWriter, r *http.Request) {
 	data := ctrl.layoutData(w, r).MergeKV("post", Blog{})
-    ctrl.mustRender(w, r, "new", data)
+	ctrl.mustRender(w, r, "new", data)
 }
 
 var nextID = len(blogs) + 1
@@ -81,7 +84,7 @@ func (ctrl *AppController) edit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := ctrl.layoutData(w, r).MergeKV("post", blogs.Get(id))
-    ctrl.mustRender(w, r, "edit", data)
+	ctrl.mustRender(w, r, "edit", data)
 }
 
 // route '/blogs/{id}/edit'
@@ -177,7 +180,10 @@ func (ctrl *AppController) blogID(w http.ResponseWriter, r *http.Request) (int, 
 }
 
 func (ctrl *AppController) mustRender(w http.ResponseWriter, r *http.Request, name string, data authboss.HTMLData) {
-	data.MergeKV("csrf_token", nosurf.Token(r))
+	if ctrl.CsrfEnable {
+        data.MergeKV("csrf_token", nosurf.Token(r))
+    }
+
 	err := ctrl.templates.Render(w, name, data)
 	if err == nil {
 		return
