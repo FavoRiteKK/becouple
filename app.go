@@ -24,16 +24,16 @@ import (
 )
 
 type BeCoupleApp struct {
-	ctrl   *AppController
-	router *mux.Router
-	ab     *authboss.Authboss
-	storer *appvendor.AuthStorer
+	Ctrl   *AppController
+	Router *mux.Router
+	Ab     *authboss.Authboss
+	Storer *appvendor.AuthStorer
 }
 
 func NewApp(authbossRootUrl string) *BeCoupleApp {
 	app := &BeCoupleApp{}
 
-	app.storer = appvendor.NewAuthStorer()
+	app.Storer = appvendor.NewAuthStorer()
 
 	app.SetupController()
 	app.SetupAuthBoss(authbossRootUrl)
@@ -62,20 +62,20 @@ func NewApp(authbossRootUrl string) *BeCoupleApp {
 
 func (app *BeCoupleApp) SetupController() {
 	ctrl := NewController(app)
-	app.ctrl = ctrl
+	app.Ctrl = ctrl
 }
 
 func (app *BeCoupleApp) SetupAuthBoss(rootUrl string) {
 	ab := authboss.New()
-	app.ab = ab
+	app.Ab = ab
 
-	ab.Storer = app.storer
-	ab.OAuth2Storer = app.storer
+	ab.Storer = app.Storer
+	ab.OAuth2Storer = app.Storer
 	ab.MountPath = "/auth"
 	ab.ViewsPath = "ab_views"
 	ab.RootURL = rootUrl
 
-	ab.LayoutDataMaker = app.ctrl.layoutData
+	ab.LayoutDataMaker = app.Ctrl.layoutData
 
 	ab.OAuth2Providers = map[string]authboss.OAuth2Provider{
 		"google": authboss.OAuth2Provider{
@@ -136,32 +136,32 @@ func (app *BeCoupleApp) SetupAuthBoss(rootUrl string) {
 func (app *BeCoupleApp) SetupRouter() {
 	// Set up our router
 	router := mux.NewRouter()
-	app.router = router
+	app.Router = router
 
 	webRouter := router.PathPrefix("/").Subrouter()
 	apiRouter := router.PathPrefix("/api").Subrouter()
 
 	// Web Routes
-	webRouter.PathPrefix("/auth").Handler(app.ab.NewRouter())
+	webRouter.PathPrefix("/auth").Handler(app.Ab.NewRouter())
 
-	webRouter.Handle("/blogs/new", authProtect(app.ctrl.newblog, app.ab)).Methods("GET")
-	webRouter.Handle("/blogs/{id}/edit", authProtect(app.ctrl.edit, app.ab)).Methods("GET")
-	webRouter.HandleFunc("/blogs", app.ctrl.index).Methods("GET")
-	webRouter.HandleFunc("/", app.ctrl.index).Methods("GET")
+	webRouter.Handle("/blogs/new", authProtect(app.Ctrl.newblog, app.Ab)).Methods("GET")
+	webRouter.Handle("/blogs/{id}/edit", authProtect(app.Ctrl.edit, app.Ab)).Methods("GET")
+	webRouter.HandleFunc("/blogs", app.Ctrl.index).Methods("GET")
+	webRouter.HandleFunc("/", app.Ctrl.index).Methods("GET")
 
-	webRouter.Handle("/blogs/{id}/edit", authProtect(app.ctrl.update, app.ab)).Methods("POST")
-	webRouter.Handle("/blogs/new", authProtect(app.ctrl.create, app.ab)).Methods("POST")
+	webRouter.Handle("/blogs/{id}/edit", authProtect(app.Ctrl.update, app.Ab)).Methods("POST")
+	webRouter.Handle("/blogs/new", authProtect(app.Ctrl.create, app.Ab)).Methods("POST")
 
 	// This should actually be a DELETE but I can't be bothered to make a proper
 	// destroy link using javascript atm.
-	webRouter.Handle("/blogs/{id}/destroy", authProtect(app.ctrl.destroy, app.ab)).Methods("POST")
+	webRouter.Handle("/blogs/{id}/destroy", authProtect(app.Ctrl.destroy, app.Ab)).Methods("POST")
 
 	webRouter.HandleFunc("/test", func(writer http.ResponseWriter, r *http.Request) {
 		log.Println(appvendor.DBHelper.GetUserByEmail("qwe@gmail.com"))
 	}).Methods("GET")
 
 	// Api Routes
-	apiRouter.HandleFunc("/auth", app.ctrl.authenticate).Methods("POST")
+	apiRouter.HandleFunc("/auth", app.Ctrl.authenticate).Methods("POST")
 	apiRouter.HandleFunc("/logout", func(writer http.ResponseWriter, r *http.Request) {
 		fmt.Println("Inside /api/logout?")
 
@@ -179,7 +179,7 @@ func (app *BeCoupleApp) SetupMiddleware() http.Handler {
 	stack := alice.New(logger,
 		nosurfing("/api/"),
 		jwtMiddleware(),
-		app.ab.ExpireMiddleware).Then(app.router)
+		app.Ab.ExpireMiddleware).Then(app.Router)
 	return stack
 }
 

@@ -196,7 +196,7 @@ func (ctrl *AppController) mustRender(w http.ResponseWriter, r *http.Request, na
 
 func (ctrl *AppController) layoutData(w http.ResponseWriter, r *http.Request) authboss.HTMLData {
 	currentUserName := ""
-	userInter, err := ctrl.app.ab.CurrentUser(w, r)
+	userInter, err := ctrl.app.Ab.CurrentUser(w, r)
 	if userInter != nil && err == nil {
 		currentUserName = userInter.(*appvendor.AuthUser).Name
 	}
@@ -204,8 +204,8 @@ func (ctrl *AppController) layoutData(w http.ResponseWriter, r *http.Request) au
 	return authboss.HTMLData{
 		"loggedin":               userInter != nil,
 		"username":               "",
-		authboss.FlashSuccessKey: ctrl.app.ab.FlashSuccess(w, r),
-		authboss.FlashErrorKey:   ctrl.app.ab.FlashError(w, r),
+		authboss.FlashSuccessKey: ctrl.app.Ab.FlashSuccess(w, r),
+		authboss.FlashErrorKey:   ctrl.app.Ab.FlashError(w, r),
 		"current_user_name":      currentUserName,
 	}
 }

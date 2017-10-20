@@ -1,4 +1,4 @@
-package main
+package main_test
 
 import (
 	"net/http"
@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	. "becouple"
 )
 
 var app *BeCoupleApp
@@ -18,12 +19,12 @@ func setup() {
 	addr := "localhost:" + port
 	app = NewApp(addr)
 
-	app.ab.XSRFMaker = func(_ http.ResponseWriter, _ *http.Request) (token string) {
+	app.Ab.XSRFMaker = func(_ http.ResponseWriter, _ *http.Request) (token string) {
         return "unused"
     }
 
     // disable csrf while testing
-    app.ctrl.CsrfEnable = false
+    app.Ctrl.CsrfEnable = false
 }
 
 func shutdown() {
@@ -41,7 +42,7 @@ func TestGetIndex(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/", nil)
 
-	app.GetRouter().ServeHTTP(w, r)
+	app.Router.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
 		t.Error("It should have written a 200:", w.Code)
