@@ -22,7 +22,7 @@ func authProtect(f http.HandlerFunc) authProtector {
 }
 
 func (ap authProtector) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if u, err := ab.CurrentUser(w, r); err != nil {
+	if u, err := beApp.ab.CurrentUser(w, r); err != nil {
 		log.Println("Error fetching current user:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	} else if u == nil {

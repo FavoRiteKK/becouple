@@ -35,7 +35,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 	// TODO: Validation
 
 	var b Blog
-	if badRequest(w, schemaDec.Decode(&b, r.PostForm)) {
+	if badRequest(w, beApp.schemaDec.Decode(&b, r.PostForm)) {
 		return
 	}
 
@@ -75,7 +75,7 @@ func update(w http.ResponseWriter, r *http.Request) {
 	// TODO: Validation
 
 	var b = blogs.Get(id)
-	if badRequest(w, schemaDec.Decode(b, r.PostForm)) {
+	if badRequest(w, beApp.schemaDec.Decode(b, r.PostForm)) {
 		return
 	}
 

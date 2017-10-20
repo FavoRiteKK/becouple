@@ -33,7 +33,6 @@ import (
 	"github.com/justinas/nosurf"
 	//"net/smtp"
 	"regexp"
-	"strings"
 )
 
 var funcs = template.FuncMap{
@@ -43,17 +42,17 @@ var funcs = template.FuncMap{
 	"yield": func() string { return "" },
 }
 
-var (
-	ab        = authboss.New()
-	database  = appvendor.NewAuthStorer()
-	templates = tpl.Must(tpl.Load("views", "views/partials", "layout.html.tpl", funcs))
-	schemaDec = schema.NewDecoder()
-	//smtpGMailPass = "qweasd1234"
-)
+type BeCoupleApp struct {
+	ab        *authboss.Authboss
+	templates tpl.Templates
+	schemaDec *schema.Decoder
+	//smtpGMailPass string
+}
 
-func setupAuthboss(addr string) {
-	ab.Storer = database
-	ab.OAuth2Storer = database
+func setupAuthboss(addr string, ds *appvendor.AuthStorer) *authboss.Authboss {
+	ab := authboss.New()
+	ab.Storer = ds
+	ab.OAuth2Storer = ds
 	ab.MountPath = "/auth"
 	ab.ViewsPath = "ab_views"
 	ab.RootURL = addr
@@ -114,17 +113,18 @@ func setupAuthboss(addr string) {
 	if err := ab.Init(); err != nil {
 		log.Fatal(err)
 	}
+
+	return ab
 }
 
-func setupRouter() *mux.Router {
+func setupRouter(authHandler http.Handler) *mux.Router {
 	// Set up our router
-	schemaDec.IgnoreUnknownKeys(true)
 	router := mux.NewRouter()
 	webRouter := router.PathPrefix("/").Subrouter()
 	apiRouter := router.PathPrefix("/api").Subrouter()
 
 	// Web Routes
-	webRouter.PathPrefix("/auth").Handler(ab.NewRouter())
+	webRouter.PathPrefix("/auth").Handler(authHandler)
 
 	webRouter.Handle("/blogs/new", authProtect(newblog)).Methods("GET")
 	webRouter.Handle("/blogs/{id}/edit", authProtect(edit)).Methods("GET")
@@ -184,47 +184,58 @@ func setupStore() {
 	appvendor.SessionStore = sessions.NewCookieStore(sessionStoreKey)
 }
 
+var (
+    beApp = &BeCoupleApp{}
+)
+
 func main() {
+    // set address
+    port := os.Getenv("PORT")
+    if len(port) == 0 {
+        port = "8000"
+    }
+    addr := "localhost:" + port
+
+    // setup our app
+    database := appvendor.NewAuthStorer()
+    schemaDec := schema.NewDecoder()
+    schemaDec.IgnoreUnknownKeys(true)
+    appTemplate := tpl.Must(tpl.Load("views", "views/partials", "layout.html.tpl", funcs))
+
+    beApp.ab = setupAuthboss(addr, database)
+    beApp.templates = appTemplate
+    beApp.schemaDec = schemaDec
+
 	setupStore()
 
-	// set address
-	port := os.Getenv("PORT")
-	if len(port) == 0 {
-		port = "8000"
-	}
-
-	addr := "localhost:" + port
-	// Initialize ab.
-	setupAuthboss("http://" + addr)
-
-	router := setupRouter()
+	router := setupRouter(beApp.ab.NewRouter())
 
 	// Set up our middleware chain
 	// also, remove csrf validator for any route path that contains /api/
 	stack := alice.New(logger,
 		nosurfing("/api/"),
 		jwtMiddleware(),
-		ab.ExpireMiddleware).Then(router)
+		beApp.ab.ExpireMiddleware).Then(router)
 
 	// debug, list routes
-	router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
-		t, err := route.GetPathTemplate()
-		if err != nil {
-			return err
-		}
-		// p will contain regular expression is compatible with regular expression in Perl, Python, and other languages.
-		// for instance the regular expression for path '/articles/{id}' will be '^/articles/(?P<v0>[^/]+)$'
-		p, err := route.GetPathRegexp()
-		if err != nil {
-			return err
-		}
-		m, err := route.GetMethods()
-		if err != nil {
-			return err
-		}
-		fmt.Println(strings.Join(m, ","), t, p)
-		return nil
-	})
+	//router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+	//	t, err := route.GetPathTemplate()
+	//	if err != nil {
+	//		return err
+	//	}
+	//	// p will contain regular expression is compatible with regular expression in Perl, Python, and other languages.
+	//	// for instance the regular expression for path '/articles/{id}' will be '^/articles/(?P<v0>[^/]+)$'
+	//	p, err := route.GetPathRegexp()
+	//	if err != nil {
+	//		return err
+	//	}
+	//	m, err := route.GetMethods()
+	//	if err != nil {
+	//		return err
+	//	}
+	//	fmt.Println(strings.Join(m, ","), t, p)
+	//	return nil
+	//})
 
 	// Start the server
 	log.Println(http.ListenAndServe(addr, stack))
@@ -232,7 +243,7 @@ func main() {
 
 func layoutData(w http.ResponseWriter, r *http.Request) authboss.HTMLData {
 	currentUserName := ""
-	userInter, err := ab.CurrentUser(w, r)
+	userInter, err := beApp.ab.CurrentUser(w, r)
 	if userInter != nil && err == nil {
 		currentUserName = userInter.(*appvendor.AuthUser).Name
 	}
@@ -240,22 +251,22 @@ func layoutData(w http.ResponseWriter, r *http.Request) authboss.HTMLData {
 	return authboss.HTMLData{
 		"loggedin":               userInter != nil,
 		"username":               "",
-		authboss.FlashSuccessKey: ab.FlashSuccess(w, r),
-		authboss.FlashErrorKey:   ab.FlashError(w, r),
+		authboss.FlashSuccessKey: beApp.ab.FlashSuccess(w, r),
+		authboss.FlashErrorKey:   beApp.ab.FlashError(w, r),
 		"current_user_name":      currentUserName,
 	}
 }
 
 func mustRender(w http.ResponseWriter, r *http.Request, name string, data authboss.HTMLData) {
 	data.MergeKV("csrf_token", nosurf.Token(r))
-	err := templates.Render(w, name, data)
+	err := beApp.templates.Render(w, name, data)
 	if err == nil {
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprintln(w, "Error occurred rendering template:", err)
+	fmt.Fprintln(w, "Error occurred rendering templates:", err)
 }
 
 func badRequest(w http.ResponseWriter, err error) bool {
