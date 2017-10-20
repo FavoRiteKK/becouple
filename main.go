@@ -1,38 +1,19 @@
 package main
 
 import (
-	"encoding/base64"
 	"fmt"
 	"html/template"
-	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	"gopkg.in/authboss.v1"
 	_ "gopkg.in/authboss.v1/auth"
 	_ "gopkg.in/authboss.v1/confirm"
 	_ "gopkg.in/authboss.v1/lock"
-	aboauth "gopkg.in/authboss.v1/oauth2"
 	_ "gopkg.in/authboss.v1/recover"
 	_ "gopkg.in/authboss.v1/register"
 	_ "gopkg.in/authboss.v1/remember"
-
-	"becouple/appvendor"
-	"github.com/aarondl/tpl"
-	"github.com/gorilla/mux"
-	"github.com/gorilla/schema"
-	"github.com/gorilla/securecookie"
-	"github.com/gorilla/sessions"
-	"github.com/justinas/alice"
-	"github.com/justinas/nosurf"
-	//"net/smtp"
-	"regexp"
 )
 
 var funcs = template.FuncMap{
@@ -42,182 +23,19 @@ var funcs = template.FuncMap{
 	"yield": func() string { return "" },
 }
 
-type BeCoupleApp struct {
-	ab        *authboss.Authboss
-	templates tpl.Templates
-	schemaDec *schema.Decoder
-	//smtpGMailPass string
-}
-
-func setupAuthboss(addr string, ds *appvendor.AuthStorer) *authboss.Authboss {
-	ab := authboss.New()
-	ab.Storer = ds
-	ab.OAuth2Storer = ds
-	ab.MountPath = "/auth"
-	ab.ViewsPath = "ab_views"
-	ab.RootURL = addr
-
-	ab.LayoutDataMaker = layoutData
-
-	ab.OAuth2Providers = map[string]authboss.OAuth2Provider{
-		"google": authboss.OAuth2Provider{
-			OAuth2Config: &oauth2.Config{
-				ClientID:     `751571472928-qfal1af5cn6ipstg8tl56rm0cncst9lv.apps.googleusercontent.com`,
-				ClientSecret: `n5KWzxPao29Z1EzcCGCFmjHS`,
-				Scopes:       []string{`profile`, `email`},
-				Endpoint:     google.Endpoint,
-			},
-			Callback: aboauth.Google,
-		},
-	}
-
-	b, err := ioutil.ReadFile(filepath.Join("views", "layout.html.tpl"))
-	if err != nil {
-		panic(err)
-	}
-	ab.Layout = template.Must(template.New("layout").Funcs(funcs).Parse(string(b)))
-
-	ab.XSRFName = "csrf_token"
-	ab.XSRFMaker = func(_ http.ResponseWriter, r *http.Request) string {
-		return nosurf.Token(r)
-	}
-
-	ab.CookieStoreMaker = appvendor.NewCookieStorer
-	ab.SessionStoreMaker = appvendor.NewSessionStorer
-
-	ab.EmailFrom = "khiemnv@rikkeisoft.com"
-
-	//TODO change to SMTPMailer in production
-	ab.Mailer = authboss.LogMailer(os.Stdout)
-	//ab.Mailer = authboss.SMTPMailer("smtp.gmail.com:587",
-	//	smtp.PlainAuth("", ab.EmailFrom, smtpGMailPass, "smtp.gmail.com"))
-
-	// TODO may change these when go production
-	ab.Policies = []authboss.Validator{
-		authboss.Rules{
-			FieldName:       "email",
-			Required:        true,
-			MustMatch:       regexp.MustCompile(`^\S+@\S+$`),
-			MatchError:      "Not an email address",
-			AllowWhitespace: false,
-		},
-		authboss.Rules{
-			FieldName:       "password",
-			Required:        true,
-			MinLength:       8,
-			MaxLength:       16,
-			AllowWhitespace: false,
-		},
-	}
-
-	if err := ab.Init(); err != nil {
-		log.Fatal(err)
-	}
-
-	return ab
-}
-
-func setupRouter(authHandler http.Handler) *mux.Router {
-	// Set up our router
-	router := mux.NewRouter()
-	webRouter := router.PathPrefix("/").Subrouter()
-	apiRouter := router.PathPrefix("/api").Subrouter()
-
-	// Web Routes
-	webRouter.PathPrefix("/auth").Handler(authHandler)
-
-	webRouter.Handle("/blogs/new", authProtect(newblog)).Methods("GET")
-	webRouter.Handle("/blogs/{id}/edit", authProtect(edit)).Methods("GET")
-	webRouter.HandleFunc("/blogs", index).Methods("GET")
-	webRouter.HandleFunc("/", index).Methods("GET")
-
-	webRouter.Handle("/blogs/{id}/edit", authProtect(update)).Methods("POST")
-	webRouter.Handle("/blogs/new", authProtect(create)).Methods("POST")
-
-	// This should actually be a DELETE but I can't be bothered to make a proper
-	// destroy link using javascript atm.
-	webRouter.Handle("/blogs/{id}/destroy", authProtect(destroy)).Methods("POST")
-
-	webRouter.HandleFunc("/test", func(writer http.ResponseWriter, r *http.Request) {
-		log.Println(appvendor.DBHelper.GetUserByEmail("qwe@gmail.com"))
-	}).Methods("GET")
-
-	// Api Routes
-	apiRouter.HandleFunc("/auth", authenticate).Methods("POST")
-	apiRouter.HandleFunc("/logout", func(writer http.ResponseWriter, r *http.Request) {
-		fmt.Println("Inside /api/logout?")
-
-	})
-
-	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-		io.WriteString(w, "No such resource exists")
-	})
-
-	return router
-}
-
-func setupStore() {
-	// Initialize Sessions and Cookies
-	// Typically gorilla securecookie and sessions packages require
-	// highly random secret keys that are not divulged to the public.
-	//
-	// TODO In this example we use keys generated one time (if these keys ever become
-	// compromised the gorilla libraries allow for key rotation, see gorilla docs)
-	// The keys are 64-bytes as recommended for HMAC keys as per the gorilla docs.
-	//
-	// These values MUST be changed for any new project as these keys are already "compromised"
-	// as they're in the public domain, if you do not change these your application will have a fairly
-	// wide-opened security hole. You can generate your own with the code below, or using whatever method
-	// you prefer:
-	//
-	//    func main() {
-	//        fmt.Println(base64.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(64)))
-	//    }
-	//
-
-	// We store them in base64 in the example to make it easy if we wanted to move them later to
-	// a configuration environment var or file.
-	cookieStoreKey, _ := base64.StdEncoding.DecodeString(`2S+t+bu22ZxFbCW0eFtwYChptomzJrjSR82AI1t3hgpHgjWRFPCHcFELqJ/Au+WCvwauz2Vgf51cpgbwY5Jnsg==`)
-	sessionStoreKey, _ := base64.StdEncoding.DecodeString(`Ab5CP07McjLvEQvjmhZUyu3j7Dj2dCxDinbac89YAZXXc8RO9s/Sh8QSZwLrW0St0WazbWjFTA8kHdjXG3LXOQ==`)
-	appvendor.CookieStore = securecookie.New(cookieStoreKey, nil)
-	appvendor.SessionStore = sessions.NewCookieStore(sessionStoreKey)
-}
-
-var (
-    beApp = &BeCoupleApp{}
-)
-
 func main() {
-    // set address
-    port := os.Getenv("PORT")
-    if len(port) == 0 {
-        port = "8000"
-    }
-    addr := "localhost:" + port
+	// set address
+	port := os.Getenv("PORT")
+	if len(port) == 0 {
+		port = "8000"
+	}
+	addr := "localhost:" + port
 
-    // setup our app
-    database := appvendor.NewAuthStorer()
-    schemaDec := schema.NewDecoder()
-    schemaDec.IgnoreUnknownKeys(true)
-    appTemplate := tpl.Must(tpl.Load("views", "views/partials", "layout.html.tpl", funcs))
-
-    beApp.ab = setupAuthboss(addr, database)
-    beApp.templates = appTemplate
-    beApp.schemaDec = schemaDec
-
-	setupStore()
-
-	router := setupRouter(beApp.ab.NewRouter())
-
-	// Set up our middleware chain
-	// also, remove csrf validator for any route path that contains /api/
-	stack := alice.New(logger,
-		nosurfing("/api/"),
-		jwtMiddleware(),
-		beApp.ab.ExpireMiddleware).Then(router)
+	// setup our app
+	app := NewApp(addr)
 
 	// debug, list routes
+	//router := app.router
 	//router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
 	//	t, err := route.GetPathTemplate()
 	//	if err != nil {
@@ -238,35 +56,7 @@ func main() {
 	//})
 
 	// Start the server
-	log.Println(http.ListenAndServe(addr, stack))
-}
-
-func layoutData(w http.ResponseWriter, r *http.Request) authboss.HTMLData {
-	currentUserName := ""
-	userInter, err := beApp.ab.CurrentUser(w, r)
-	if userInter != nil && err == nil {
-		currentUserName = userInter.(*appvendor.AuthUser).Name
-	}
-
-	return authboss.HTMLData{
-		"loggedin":               userInter != nil,
-		"username":               "",
-		authboss.FlashSuccessKey: beApp.ab.FlashSuccess(w, r),
-		authboss.FlashErrorKey:   beApp.ab.FlashError(w, r),
-		"current_user_name":      currentUserName,
-	}
-}
-
-func mustRender(w http.ResponseWriter, r *http.Request, name string, data authboss.HTMLData) {
-	data.MergeKV("csrf_token", nosurf.Token(r))
-	err := beApp.templates.Render(w, name, data)
-	if err == nil {
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprintln(w, "Error occurred rendering templates:", err)
+	log.Println(http.ListenAndServe(addr, app.SetupMiddleware()))
 }
 
 func badRequest(w http.ResponseWriter, err error) bool {

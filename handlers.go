@@ -1,32 +1,56 @@
 package main
 
 import (
+	"becouple/appvendor"
 	"becouple/models"
+	"fmt"
+	"github.com/aarondl/tpl"
 	jwtPkg "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin/json"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/schema"
+	"github.com/justinas/nosurf"
+	"gopkg.in/authboss.v1"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
 )
 
+type AppController struct {
+	app       *BeCoupleApp
+	decoder   *schema.Decoder
+	templates tpl.Templates
+}
+
+func NewController(app *BeCoupleApp) *AppController {
+	ctrl := new(AppController)
+
+	ctrl.app = app
+	ctrl.decoder = schema.NewDecoder()
+	ctrl.decoder.IgnoreUnknownKeys(true)
+
+	ctrl.templates = tpl.Must(tpl.Load("views", "views/partials", "layout.html.tpl", funcs))
+
+	return ctrl
+}
+
 // route '/', '/blogs'
-func index(w http.ResponseWriter, r *http.Request) {
-	data := layoutData(w, r).MergeKV("posts", blogs)
-	mustRender(w, r, "index", data)
+func (ctrl *AppController) index(w http.ResponseWriter, r *http.Request) {
+	data := ctrl.layoutData(w, r).MergeKV("posts", blogs)
+	ctrl.mustRender(w, r, "index", data)
 }
 
 // route '/blogs/new
-func newblog(w http.ResponseWriter, r *http.Request) {
-	data := layoutData(w, r).MergeKV("post", Blog{})
-	mustRender(w, r, "new", data)
+func (ctrl *AppController) newblog(w http.ResponseWriter, r *http.Request) {
+	data := ctrl.layoutData(w, r).MergeKV("post", Blog{})
+    ctrl.mustRender(w, r, "new", data)
 }
 
 var nextID = len(blogs) + 1
 
 // route /blogs/new
-func create(w http.ResponseWriter, r *http.Request) {
+func (ctrl *AppController) create(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if badRequest(w, err) {
 		return
@@ -35,7 +59,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 	// TODO: Validation
 
 	var b Blog
-	if badRequest(w, beApp.schemaDec.Decode(&b, r.PostForm)) {
+	if badRequest(w, ctrl.decoder.Decode(&b, r.PostForm)) {
 		return
 	}
 
@@ -50,24 +74,24 @@ func create(w http.ResponseWriter, r *http.Request) {
 }
 
 // route '/blogs/{id}/edit'
-func edit(w http.ResponseWriter, r *http.Request) {
-	id, ok := blogID(w, r)
+func (ctrl *AppController) edit(w http.ResponseWriter, r *http.Request) {
+	id, ok := ctrl.blogID(w, r)
 	if !ok {
 		return
 	}
 
-	data := layoutData(w, r).MergeKV("post", blogs.Get(id))
-	mustRender(w, r, "edit", data)
+	data := ctrl.layoutData(w, r).MergeKV("post", blogs.Get(id))
+    ctrl.mustRender(w, r, "edit", data)
 }
 
 // route '/blogs/{id}/edit'
-func update(w http.ResponseWriter, r *http.Request) {
+func (ctrl *AppController) update(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if badRequest(w, err) {
 		return
 	}
 
-	id, ok := blogID(w, r)
+	id, ok := ctrl.blogID(w, r)
 	if !ok {
 		return
 	}
@@ -75,7 +99,7 @@ func update(w http.ResponseWriter, r *http.Request) {
 	// TODO: Validation
 
 	var b = blogs.Get(id)
-	if badRequest(w, beApp.schemaDec.Decode(b, r.PostForm)) {
+	if badRequest(w, ctrl.decoder.Decode(b, r.PostForm)) {
 		return
 	}
 
@@ -85,8 +109,8 @@ func update(w http.ResponseWriter, r *http.Request) {
 }
 
 // route '/blogs/{id}/destroy'
-func destroy(w http.ResponseWriter, r *http.Request) {
-	id, ok := blogID(w, r)
+func (ctrl *AppController) destroy(w http.ResponseWriter, r *http.Request) {
+	id, ok := ctrl.blogID(w, r)
 	if !ok {
 		return
 	}
@@ -97,7 +121,7 @@ func destroy(w http.ResponseWriter, r *http.Request) {
 }
 
 // route '/api/auth'
-func authenticate(w http.ResponseWriter, r *http.Request) {
+func (ctrl *AppController) authenticate(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("primaryID")
 	password := r.FormValue("password")
 
@@ -133,7 +157,7 @@ func authenticate(w http.ResponseWriter, r *http.Request) {
 	w.Write(jwtAuth)
 }
 
-func blogID(w http.ResponseWriter, r *http.Request) (int, bool) {
+func (ctrl *AppController) blogID(w http.ResponseWriter, r *http.Request) (int, bool) {
 	vars := mux.Vars(r)
 	str := vars["id"]
 
@@ -150,4 +174,32 @@ func blogID(w http.ResponseWriter, r *http.Request) (int, bool) {
 	}
 
 	return id, true
+}
+
+func (ctrl *AppController) mustRender(w http.ResponseWriter, r *http.Request, name string, data authboss.HTMLData) {
+	data.MergeKV("csrf_token", nosurf.Token(r))
+	err := ctrl.templates.Render(w, name, data)
+	if err == nil {
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprintln(w, "Error occurred rendering templates:", err)
+}
+
+func (ctrl *AppController) layoutData(w http.ResponseWriter, r *http.Request) authboss.HTMLData {
+	currentUserName := ""
+	userInter, err := ctrl.app.ab.CurrentUser(w, r)
+	if userInter != nil && err == nil {
+		currentUserName = userInter.(*appvendor.AuthUser).Name
+	}
+
+	return authboss.HTMLData{
+		"loggedin":               userInter != nil,
+		"username":               "",
+		authboss.FlashSuccessKey: ctrl.app.ab.FlashSuccess(w, r),
+		authboss.FlashErrorKey:   ctrl.app.ab.FlashError(w, r),
+		"current_user_name":      currentUserName,
+	}
 }

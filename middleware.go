@@ -11,18 +11,20 @@ import (
     "github.com/dgrijalva/jwt-go/request"
     "github.com/gin-gonic/gin/json"
 	"becouple/appvendor"
+	"gopkg.in/authboss.v1"
 )
 
 type authProtector struct {
 	f http.HandlerFunc
+	ab *authboss.Authboss
 }
 
-func authProtect(f http.HandlerFunc) authProtector {
-	return authProtector{f}
+func authProtect(f http.HandlerFunc, ab *authboss.Authboss) authProtector {
+	return authProtector{f, ab}
 }
 
 func (ap authProtector) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if u, err := beApp.ab.CurrentUser(w, r); err != nil {
+	if u, err := ap.ab.CurrentUser(w, r); err != nil {
 		log.Println("Error fetching current user:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	} else if u == nil {
