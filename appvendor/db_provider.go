@@ -41,11 +41,13 @@ func init() {
 }
 
 func (mgr *manager) Insert(email string, password string, fullname string) (sql.Result, error) {
-	stmt, err := mgr.db.Prepare("INSERT IGNORE INTO `user` (`password`, `fullname`) VALUES(?, ?, ?)")
-    defer stmt.Close()
+    stmt, err := mgr.db.Prepare("INSERT IGNORE INTO `user` (`password`, `fullname`) VALUES(?, ?, ?)")
+    if stmt != nil {
+        defer stmt.Close()
+    }
 
 	if err != nil {
-        log.Fatal("SQL error >> ", err.Error())
+	    return nil, err
 	}
 
 	result, err := stmt.Exec("", password, fullname)
@@ -54,10 +56,12 @@ func (mgr *manager) Insert(email string, password string, fullname string) (sql.
 
 func (mgr *manager) GetUserByEmail(email string) (*sql.Row, error) {
 	stmt, err := mgr.db.Prepare("SELECT `user_id`, `email`, `password` FROM `user` WHERE email = ? LIMIT 1")
-    defer stmt.Close()
+    if stmt != nil {
+        defer stmt.Close()
+    }
 
 	if err != nil {
-        log.Fatal("SQL error >> ", err.Error())
+        return nil, err
 	}
 
 	row := stmt.QueryRow(email)

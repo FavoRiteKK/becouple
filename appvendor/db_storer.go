@@ -86,7 +86,7 @@ func (s AuthStorer) Get(key string) (result interface{}, err error) {
 
 	err = row.Scan(&user.ID, &user.Email, &user.Password)
 	if err != nil {
-		log.Println(err.Error())
+		log.Println("Scan user error: ", err.Error())
 		return nil, authboss.ErrUserNotFound
 	}
 
