@@ -1,12 +1,12 @@
 package main_test
 
 import (
+	. "becouple"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
-	. "becouple"
 )
 
 var app *BeCoupleApp
@@ -20,11 +20,11 @@ func setup() {
 	app = NewApp(addr)
 
 	app.Ab.XSRFMaker = func(_ http.ResponseWriter, _ *http.Request) (token string) {
-        return "unused"
-    }
+		return "unused"
+	}
 
-    // disable csrf while testing
-    app.Ctrl.CsrfEnable = false
+	// disable csrf while testing
+	app.Ctrl.CsrfEnable = false
 }
 
 func shutdown() {
@@ -45,7 +45,7 @@ func TestGetIndex(t *testing.T) {
 	app.Router.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
-		t.Error("It should have written a 200:", w.Code)
+		t.Error("It should have written a 200: ", w.Code)
 	}
 
 	if w.Body.Len() == 0 {
@@ -53,6 +53,25 @@ func TestGetIndex(t *testing.T) {
 	}
 
 	if str := w.Body.String(); !strings.Contains(str, "Blogs - Index") {
-		t.Error("It should have rendered 'Blog - Index':", str)
+		t.Error("It should have rendered 'Blog - Index': ", str)
+	}
+}
+
+func TestGetRegisterIndex(t *testing.T) {
+	w := httptest.NewRecorder()
+	r, _ := http.NewRequest("GET", "/auth/register", nil)
+
+	app.Router.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Error("It should have written a 200: ", w.Code)
+	}
+
+	if w.Body.Len() == 0 {
+		t.Error("It should have wrote a response.")
+	}
+
+	if str := w.Body.String(); !strings.Contains(str, "<form") {
+		t.Error("It should have rendered register form: ", str)
 	}
 }
