@@ -139,7 +139,7 @@ func setupRouter() *mux.Router {
 	webRouter.Handle("/blogs/{id}/destroy", authProtect(destroy)).Methods("POST")
 
 	webRouter.HandleFunc("/test", func(writer http.ResponseWriter, r *http.Request) {
-		appvendor.DBHelper.GetUserByEmail("qwe@gmail.com")
+		log.Println(appvendor.DBHelper.GetUserByEmail("qwe@gmail.com"))
 	}).Methods("GET")
 
 	// Api Routes

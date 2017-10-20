@@ -3,12 +3,13 @@ package appvendor
 import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"time"
+    "log"
 )
 
 type DBManager interface {
 	// Add other methods
+	Insert(email string, password string, fullname string) (sql.Result, error)
 	GetUserByEmail(email string) (*sql.Row, error)
 }
 
@@ -39,12 +40,24 @@ func init() {
 	DBHelper = &manager{db: db}
 }
 
-func (mgr *manager) GetUserByEmail(email string) (*sql.Row, error) {
-	stmt, err := mgr.db.Prepare("SELECT `user_id`, `email`, `password` FROM `user` WHERE email = ? LIMIT 1")
-	defer stmt.Close()
+func (mgr *manager) Insert(email string, password string, fullname string) (sql.Result, error) {
+	stmt, err := mgr.db.Prepare("INSERT IGNORE INTO `user` (`password`, `fullname`) VALUES(?, ?, ?)")
+    defer stmt.Close()
 
 	if err != nil {
-		return nil, err
+        log.Fatal("SQL error >> ", err.Error())
+	}
+
+	result, err := stmt.Exec("", password, fullname)
+	return result, err
+}
+
+func (mgr *manager) GetUserByEmail(email string) (*sql.Row, error) {
+	stmt, err := mgr.db.Prepare("SELECT `user_id`, `email`, `password` FROM `user` WHERE email = ? LIMIT 1")
+    defer stmt.Close()
+
+	if err != nil {
+        log.Fatal("SQL error >> ", err.Error())
 	}
 
 	row := stmt.QueryRow(email)

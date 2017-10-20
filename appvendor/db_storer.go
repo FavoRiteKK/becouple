@@ -3,40 +3,42 @@
 package appvendor
 
 import (
+	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"gopkg.in/authboss.v1"
 	"log"
-    "time"
+	"time"
 )
 
 type AuthUser struct {
-    ID   int
-    Name string
+	ID   int
+	Name string
 
-    // Auth
-    Email    string
-    Password string
+	// Auth
+	Email    string
+	Password string
 
-    // OAuth2
-    Oauth2Uid      string
-    Oauth2Provider string
-    Oauth2Token    string
-    Oauth2Refresh  string
-    Oauth2Expiry   time.Time
+	// OAuth2
+	Oauth2Uid      string
+	Oauth2Provider string
+	Oauth2Token    string
+	Oauth2Refresh  string
+	Oauth2Expiry   time.Time
 
-    // Confirm
-    ConfirmToken string
-    Confirmed    bool
+	// Confirm
+	ConfirmToken string
+	Confirmed    bool
 
-    // Lock
-    AttemptNumber int64
-    AttemptTime   time.Time
-    Locked        time.Time
+	// Lock
+	AttemptNumber int64
+	AttemptTime   time.Time
+	Locked        time.Time
 
-    // Recover
-    RecoverToken       string
-    RecoverTokenExpiry time.Time
+	// Recover
+	RecoverToken       string
+	RecoverTokenExpiry time.Time
 
-    // Remember is in another table
+	// Remember is in another table
 }
 
 type AuthStorer struct {
@@ -50,8 +52,21 @@ func NewAuthStorer() *AuthStorer {
 func (s AuthStorer) Create(key string, attr authboss.Attributes) error {
 	var user AuthUser
 	if err := attr.Bind(&user, true); err != nil {
+        log.Println(err.Error())
 		return err
 	}
+
+	//TODO get user's fullname somehow
+
+	// save to db
+	result, err := s.dbHelper.Insert(user.Email, user.Password, "Anonymous")
+	if err != nil {
+        log.Println("Error insert query: ", err.Error())
+		return err
+	}
+
+	fmt.Println("==========> Create user result:")
+	spew.Dump(result)
 
 	return nil
 }
@@ -63,7 +78,7 @@ func (s AuthStorer) Put(key string, attr authboss.Attributes) error {
 func (s AuthStorer) Get(key string) (result interface{}, err error) {
 	row, err := s.dbHelper.GetUserByEmail(key)
 	if err != nil {
-		log.Print(err.Error())
+		log.Println("Error select query", err.Error())
 		return nil, err
 	}
 
@@ -71,7 +86,7 @@ func (s AuthStorer) Get(key string) (result interface{}, err error) {
 
 	err = row.Scan(&user.ID, &user.Email, &user.Password)
 	if err != nil {
-		log.Print(err.Error())
+		log.Println(err.Error())
 		return nil, authboss.ErrUserNotFound
 	}
 
