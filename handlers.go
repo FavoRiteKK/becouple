@@ -123,43 +123,6 @@ func (ctrl *WebController) destroy(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-// route '/api/auth'
-func (ctrl *WebController) authenticate(w http.ResponseWriter, r *http.Request) {
-	key := r.FormValue("primaryID")
-	password := r.FormValue("password")
-
-	log.Printf("pID: %v, pass: %v", key, password)
-
-	// Create a new token object, specifying signing method and the claims
-	// you would like it to contain.
-	token := jwtPkg.NewWithClaims(appJwtSigningMethod, jwtPkg.MapClaims{
-		"Id":  "Christopher",
-		"exp": time.Now().Add(time.Hour * 1).Unix(),
-	})
-
-	// Sign and get the complete encoded token as a string using the secret
-	tokenString, err := token.SignedString([]byte(appJwtSecret)) // must convert to []byte, otherwise we get error 'key is invalid'
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	ar := models.AuthResponse{
-		Jwt:            tokenString,
-		ServerResponse: &models.ServerResponse{Success: true},
-	}
-
-	jwtAuth, err := json.Marshal(ar)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jwtAuth)
-}
-
 func (ctrl *WebController) blogID(w http.ResponseWriter, r *http.Request) (int, bool) {
 	vars := mux.Vars(r)
 	str := vars["id"]
@@ -222,4 +185,41 @@ func NewAPIController(app *BeCoupleApp) *APIController {
 	api := new(APIController)
 	api.app = app
 	return api
+}
+
+// route '/api/auth'
+func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
+	key := r.FormValue("primaryID")
+	password := r.FormValue("password")
+
+	log.Printf("pID: %v, pass: %v", key, password)
+
+	// Create a new token object, specifying signing method and the claims
+	// you would like it to contain.
+	token := jwtPkg.NewWithClaims(appJwtSigningMethod, jwtPkg.MapClaims{
+		"Id":  "Christopher",
+		"exp": time.Now().Add(time.Hour * 1).Unix(),
+	})
+
+	// Sign and get the complete encoded token as a string using the secret
+	tokenString, err := token.SignedString([]byte(appJwtSecret)) // must convert to []byte, otherwise we get error 'key is invalid'
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	ar := models.AuthResponse{
+		Jwt:            tokenString,
+		ServerResponse: &models.ServerResponse{Success: true},
+	}
+
+	jwtAuth, err := json.Marshal(ar)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jwtAuth)
 }
