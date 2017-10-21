@@ -3,14 +3,16 @@ package main
 import (
 	"becouple/appvendor"
 	"becouple/models"
+	"encoding/json"
 	"fmt"
 	"github.com/aarondl/tpl"
 	jwtPkg "github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin/json"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
 	"github.com/justinas/nosurf"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/authboss.v1"
+	"gopkg.in/go-playground/validator.v9"
 	"log"
 	"net/http"
 	"strconv"
@@ -144,8 +146,8 @@ func (ctrl *WebController) blogID(w http.ResponseWriter, r *http.Request) (int, 
 
 func (ctrl *WebController) mustRender(w http.ResponseWriter, r *http.Request, name string, data authboss.HTMLData) {
 	if ctrl.CsrfEnable {
-        data.MergeKV("csrf_token", nosurf.Token(r))
-    }
+		data.MergeKV("csrf_token", nosurf.Token(r))
+	}
 
 	err := ctrl.templates.Render(w, name, data)
 	if err == nil {
@@ -178,27 +180,89 @@ func (ctrl *WebController) layoutData(w http.ResponseWriter, r *http.Request) au
 //=============================================================
 
 type APIController struct {
-	app *BeCoupleApp
+	app       *BeCoupleApp
+	validator map[string]func(r *http.Request) error
 }
 
 func NewAPIController(app *BeCoupleApp) *APIController {
 	api := new(APIController)
 	api.app = app
+	api.validator = make(map[string]func(r *http.Request) error)
+
+	delegate := validator.New()
+
+	// make validators
+	api.validator["/auth"] = func(r *http.Request) error {
+		key := r.FormValue("primaryID")
+		password := r.FormValue("password")
+
+		if err := delegate.Var(key, "email"); err != nil {
+			return err
+		}
+
+		if err := delegate.Var(password, "min=4,max=16"); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
 	return api
 }
 
 // route '/api/auth'
 func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
+
+	// default response to error
+	response := models.AuthResponse{
+		ServerResponse: &models.ServerResponse{
+			Success: false,
+		},
+	}
+
+	// validate input
+	if err := api.validator["/auth"](r); err != nil {
+		response.Err = err.Error()
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
 	key := r.FormValue("primaryID")
 	password := r.FormValue("password")
 
 	log.Printf("pID: %v, pass: %v", key, password)
+	w.Header().Set("Content-Type", "application/json")
+
+	// get primary from storer and check if exists
+	obj, err := api.app.Ab.Storer.Get(key)
+	if err != nil {
+		response.Err = err.Error()
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	user, ok := obj.(*appvendor.AuthUser)
+	if !ok {
+		http.Error(w, "Storer should returns a type AuthUser", http.StatusInternalServerError)
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		response.Err = err.Error()
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	//TODO test if user is confirmed, and user is not locked
+
+	// process result success
 
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain.
 	token := jwtPkg.NewWithClaims(appJwtSigningMethod, jwtPkg.MapClaims{
-		"Id":  "Christopher",
-		"exp": time.Now().Add(time.Hour * 1).Unix(),
+		"Id":  key,
+		"exp": time.Now().Add(time.Minute * 10).Unix(),
+		//TODO may change these when go live
 	})
 
 	// Sign and get the complete encoded token as a string using the secret
@@ -209,17 +273,8 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ar := models.AuthResponse{
-		Jwt:            tokenString,
-		ServerResponse: &models.ServerResponse{Success: true},
-	}
+	response.Jwt = tokenString
+	response.Success = true
 
-	jwtAuth, err := json.Marshal(ar)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jwtAuth)
+	json.NewEncoder(w).Encode(response)
 }

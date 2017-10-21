@@ -2,21 +2,21 @@ package main_test
 
 import (
 	. "becouple"
+	"bytes"
+	"gopkg.in/authboss.v1"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
-    "net/url"
-    "gopkg.in/authboss.v1"
-    "bytes"
-    "log"
 )
 
 var app *BeCoupleApp
 
 func setup() {
-    log.SetFlags(log.LstdFlags | log.Lshortfile)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	port := os.Getenv("PORT")
 	if len(port) == 0 {
@@ -82,23 +82,23 @@ func TestGetRegisterIndex(t *testing.T) {
 	}
 }
 
-func TestPostRegister(t *testing.T)  {
+func TestPostRegister(t *testing.T) {
 
-    w := httptest.NewRecorder()
-    vals := url.Values{}
+	w := httptest.NewRecorder()
+	vals := url.Values{}
 
-    email := "qwe@gmail.com"
-    vals.Set(authboss.StoreEmail, email)
-    vals.Set(authboss.StorePassword, "qweasd123")
-    vals.Set(authboss.ConfirmPrefix+authboss.StorePassword, "qweasd123")
+	email := "qwe@gmail.com"
+	vals.Set(authboss.StoreEmail, email)
+	vals.Set(authboss.StorePassword, "qweasd123")
+	vals.Set(authboss.ConfirmPrefix+authboss.StorePassword, "qweasd123")
 
-    r, _ := http.NewRequest("POST", "/auth/register", bytes.NewBufferString(vals.Encode()))
-    r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r, _ := http.NewRequest("POST", "/auth/register", bytes.NewBufferString(vals.Encode()))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-    app.Router.ServeHTTP(w, r)
+	app.Router.ServeHTTP(w, r)
 
-    if w.Code != http.StatusFound {
-        t.Error("It should have written a redirect:", w.Code)
-    }
+	if w.Code != http.StatusFound {
+		t.Error("It should have written a redirect:", w.Code)
+	}
 
 }

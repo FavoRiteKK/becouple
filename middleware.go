@@ -5,17 +5,17 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/justinas/nosurf"
-    jwtPkg "github.com/dgrijalva/jwt-go"
-    "regexp"
-    "github.com/dgrijalva/jwt-go/request"
-    "github.com/gin-gonic/gin/json"
 	"becouple/appvendor"
+	jwtPkg "github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go/request"
+	"github.com/gin-gonic/gin/json"
+	"github.com/justinas/nosurf"
 	"gopkg.in/authboss.v1"
+	"regexp"
 )
 
 type authProtector struct {
-	f http.HandlerFunc
+	f  http.HandlerFunc
 	ab *authboss.Authboss
 }
 
@@ -78,79 +78,79 @@ func logger(h http.Handler) http.Handler {
 }
 
 func jwtMiddleware() func(next http.Handler) http.Handler {
-    return func(next http.Handler) http.Handler {
-        jwtAuth := NewJwtAuth()
+	return func(next http.Handler) http.Handler {
+		jwtAuth := NewJwtAuth()
 
-        // regex to check if route contains '/api/'
-        // if it does, the middleware would check jwt token
-        regex := regexp.MustCompile("/api/")
+		// regex to check if route contains '/api/'
+		// if it does, the middleware would check jwt token
+		regex := regexp.MustCompile("/api/")
 
-        jwtAuth.token = jwtPkg.New(appJwtSigningMethod)
-        jwtAuth.next = next
-        jwtAuth.except = func(r *http.Request) bool {
-            path := r.URL.Path
+		jwtAuth.token = jwtPkg.New(appJwtSigningMethod)
+		jwtAuth.next = next
+		jwtAuth.except = func(r *http.Request) bool {
+			path := r.URL.Path
 
-            // exempt this exactly path
-            if path == "/api/auth" {
-                return true
-            }
+			// exempt this exactly path
+			if path == "/api/auth" {
+				return true
+			}
 
-            return !regex.MatchString(path)
-        }
-        return jwtAuth
-    }
+			return !regex.MatchString(path)
+		}
+		return jwtAuth
+	}
 }
 
 //////////////////////////////////////////////////
 // jwtAuth middleware
 //////////////////////////////////////////////////
 var (
-    appJwtSigningMethod = jwtPkg.SigningMethodHS256
-    appJwtSecret = "qweasd123"
+	appJwtSigningMethod = jwtPkg.SigningMethodHS256
+	appJwtSecret        = "qweasd123"
 )
 
 type JwtAuth struct {
-    token *jwtPkg.Token
-	next http.Handler
+	token *jwtPkg.Token
+	next  http.Handler
 	// method to parse request, return true if request should be skipped for jwt token validation
 	except func(r *http.Request) bool
 }
 
 func NewJwtAuth() *JwtAuth {
-    jwtToken := &JwtAuth{}
+	jwtToken := &JwtAuth{}
 
-    return jwtToken
+	return jwtToken
 }
 
 func (jwt *JwtAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-    // if except function return true for the request, then skip check jwt token
-    if jwt.except(r) {
-        jwt.next.ServeHTTP(w, r)
-        return
-    }
+	// if except function return true for the request, then skip check jwt token
+	if jwt.except(r) {
+		jwt.next.ServeHTTP(w, r)
+		return
+	}
 
-    // parse jwt token
-    bearer, err := request.ParseFromRequest(r, request.OAuth2Extractor, func(token *jwtPkg.Token) (interface{}, error) {
-        b := []byte(appJwtSecret)
-        return b, nil
-    })
+	// parse jwt token
+	bearer, err := request.ParseFromRequest(r, request.OAuth2Extractor, func(token *jwtPkg.Token) (interface{}, error) {
+		b := []byte(appJwtSecret)
+		return b, nil
+	})
 
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusUnauthorized)
-        return
-    }
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
 
-    jb, err := json.Marshal(bearer)
-    if err != nil {
-        http.Error(w, "Error marshal bearer", http.StatusInternalServerError)
-        return
-    }
+	jb, err := json.Marshal(bearer)
+	if err != nil {
+		http.Error(w, "Error marshal bearer", http.StatusInternalServerError)
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    w.Write(jb)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jb)
 
-    jwt.next.ServeHTTP(w, r)
+	jwt.next.ServeHTTP(w, r)
 }
 
 //////////////////////////////////////////////////
