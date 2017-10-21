@@ -52,7 +52,7 @@ func NewAuthStorer() *AuthStorer {
 func (s AuthStorer) Create(key string, attr authboss.Attributes) error {
 	var user AuthUser
 	if err := attr.Bind(&user, true); err != nil {
-        log.Println(err.Error())
+		log.Println(err.Error())
 		return err
 	}
 
@@ -61,7 +61,7 @@ func (s AuthStorer) Create(key string, attr authboss.Attributes) error {
 	// save to db
 	result, err := s.dbHelper.Insert(user.Email, user.Password, "Anonymous")
 	if err != nil {
-        log.Println("Error insert query: ", err.Error())
+		log.Println("Error insert query: ", err.Error())
 		return err
 	}
 

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"gopkg.in/authboss.v1"
 )
 
@@ -74,7 +73,7 @@ func (s AuthStorer) Create(key string, attr authboss.Attributes) error {
 
 	s.Users[key] = user
 	fmt.Println("Create")
-	spew.Dump(s.Users)
+	//spew.Dump(s.Users)
 	return nil
 }
 
@@ -107,14 +106,14 @@ func (s AuthStorer) GetOAuth(uid, provider string) (result interface{}, err erro
 func (s AuthStorer) AddToken(key, token string) error {
 	s.Tokens[key] = append(s.Tokens[key], token)
 	fmt.Println("AddToken")
-	spew.Dump(s.Tokens)
+	//spew.Dump(s.Tokens)
 	return nil
 }
 
 func (s AuthStorer) DelTokens(key string) error {
 	delete(s.Tokens, key)
 	fmt.Println("DelTokens")
-	spew.Dump(s.Tokens)
+	//spew.Dump(s.Tokens)
 	return nil
 }
 

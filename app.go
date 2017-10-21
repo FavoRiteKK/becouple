@@ -161,7 +161,7 @@ func (app *BeCoupleApp) SetupRouter() {
 	webRouter.Handle("/blogs/{id}/destroy", authProtect(app.WebCtrl.destroy, app.Ab)).Methods("POST")
 
 	webRouter.HandleFunc("/test", func(writer http.ResponseWriter, r *http.Request) {
-		log.Println(appvendor.DBHelper.GetUserByEmail("qwe@gmail.com"))
+		//log.Println(appvendor.DBHelper.GetUserByEmail("qwe@gmail.com"))
 	}).Methods("GET")
 
 	// Api Routes

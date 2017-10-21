@@ -14,12 +14,6 @@
   revision = "e4905e745b4e2371caa002edf3ccdaf798ffd4b4"
 
 [[projects]]
-  name = "github.com/davecgh/go-spew"
-  packages = ["spew"]
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
-
-[[projects]]
   name = "github.com/dgrijalva/jwt-go"
   packages = [".","request"]
   revision = "dbeaa9332f19a944acb5736b4456cfcc02140e29"
@@ -32,16 +26,10 @@
   revision = "b8b68314faa067acae5b17c828127b04af51ebe2"
 
 [[projects]]
-  name = "github.com/go-sql-driver/mysql"
-  packages = ["."]
-  revision = "a0583e0143b1624142adab07e0e97fe106d99561"
-  version = "v1.3"
-
-[[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "130e6b02ab059e7b717a096f397c5b60111cae74"
+  revision = "1643683e1b54a9e88ad26d98f81400c8c9d9f4f9"
 
 [[projects]]
   name = "github.com/gorilla/context"
@@ -130,6 +118,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fac137ed11c37b3ebb51cf908adee40d1667e9c32a68a159ac64f7530a9c3abe"
+  inputs-digest = "bba6f78d8d3689bd581e84b2cc8d17f74f11dc899047f528cba49147c4b7cc70"
   solver-name = "gps-cdcl"
   solver-version = 1

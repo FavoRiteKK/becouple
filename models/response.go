@@ -8,6 +8,6 @@ type ServerResponse struct {
 }
 
 type AuthResponse struct {
-	Jwt string `json:"token"`
+	Jwt string `json:"token,omitempty"`
 	*ServerResponse
 }
