@@ -30,7 +30,7 @@ func setup() {
 	}
 
 	// disable csrf while testing
-	app.Ctrl.CsrfEnable = false
+	app.WebCtrl.CsrfEnable = false
 }
 
 func shutdown() {

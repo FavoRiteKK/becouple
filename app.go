@@ -24,10 +24,10 @@ import (
 )
 
 type BeCoupleApp struct {
-	Ctrl   *WebController
-	Router *mux.Router
-	Ab     *authboss.Authboss
-	Storer *appvendor.AuthStorer
+	WebCtrl *WebController
+	Router  *mux.Router
+	Ab      *authboss.Authboss
+	Storer  *appvendor.AuthStorer
 }
 
 func NewApp(authbossRootUrl string) *BeCoupleApp {
@@ -62,7 +62,7 @@ func NewApp(authbossRootUrl string) *BeCoupleApp {
 
 func (app *BeCoupleApp) SetupController() {
 	ctrl := NewController(app)
-	app.Ctrl = ctrl
+	app.WebCtrl = ctrl
 }
 
 func (app *BeCoupleApp) SetupAuthBoss(rootUrl string) {
@@ -75,7 +75,7 @@ func (app *BeCoupleApp) SetupAuthBoss(rootUrl string) {
 	ab.ViewsPath = "ab_views"
 	ab.RootURL = rootUrl
 
-	ab.LayoutDataMaker = app.Ctrl.layoutData
+	ab.LayoutDataMaker = app.WebCtrl.layoutData
 
 	ab.OAuth2Providers = map[string]authboss.OAuth2Provider{
 		"google": authboss.OAuth2Provider{
@@ -144,24 +144,24 @@ func (app *BeCoupleApp) SetupRouter() {
 	// Web Routes
 	webRouter.PathPrefix("/auth").Handler(app.Ab.NewRouter())
 
-	webRouter.Handle("/blogs/new", authProtect(app.Ctrl.newblog, app.Ab)).Methods("GET")
-	webRouter.Handle("/blogs/{id}/edit", authProtect(app.Ctrl.edit, app.Ab)).Methods("GET")
-	webRouter.HandleFunc("/blogs", app.Ctrl.index).Methods("GET")
-	webRouter.HandleFunc("/", app.Ctrl.index).Methods("GET")
+	webRouter.Handle("/blogs/new", authProtect(app.WebCtrl.newblog, app.Ab)).Methods("GET")
+	webRouter.Handle("/blogs/{id}/edit", authProtect(app.WebCtrl.edit, app.Ab)).Methods("GET")
+	webRouter.HandleFunc("/blogs", app.WebCtrl.index).Methods("GET")
+	webRouter.HandleFunc("/", app.WebCtrl.index).Methods("GET")
 
-	webRouter.Handle("/blogs/{id}/edit", authProtect(app.Ctrl.update, app.Ab)).Methods("POST")
-	webRouter.Handle("/blogs/new", authProtect(app.Ctrl.create, app.Ab)).Methods("POST")
+	webRouter.Handle("/blogs/{id}/edit", authProtect(app.WebCtrl.update, app.Ab)).Methods("POST")
+	webRouter.Handle("/blogs/new", authProtect(app.WebCtrl.create, app.Ab)).Methods("POST")
 
 	// This should actually be a DELETE but I can't be bothered to make a proper
 	// destroy link using javascript atm.
-	webRouter.Handle("/blogs/{id}/destroy", authProtect(app.Ctrl.destroy, app.Ab)).Methods("POST")
+	webRouter.Handle("/blogs/{id}/destroy", authProtect(app.WebCtrl.destroy, app.Ab)).Methods("POST")
 
 	webRouter.HandleFunc("/test", func(writer http.ResponseWriter, r *http.Request) {
 		log.Println(appvendor.DBHelper.GetUserByEmail("qwe@gmail.com"))
 	}).Methods("GET")
 
 	// Api Routes
-	apiRouter.HandleFunc("/auth", app.Ctrl.authenticate).Methods("POST")
+	apiRouter.HandleFunc("/auth", app.WebCtrl.authenticate).Methods("POST")
 	apiRouter.HandleFunc("/logout", func(writer http.ResponseWriter, r *http.Request) {
 		fmt.Println("Inside /api/logout?")
 

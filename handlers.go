@@ -209,3 +209,17 @@ func (ctrl *WebController) layoutData(w http.ResponseWriter, r *http.Request) au
 		"current_user_name":      currentUserName,
 	}
 }
+
+//=============================================================
+// type ApiController
+//=============================================================
+
+type APIController struct {
+	app *BeCoupleApp
+}
+
+func NewAPIController(app *BeCoupleApp) *APIController {
+	api := new(APIController)
+	api.app = app
+	return api
+}
