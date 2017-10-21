@@ -24,7 +24,7 @@ type WebController struct {
 	CsrfEnable bool
 }
 
-func NewController(app *BeCoupleApp) *WebController {
+func NewWebController(app *BeCoupleApp) *WebController {
 	ctrl := new(WebController)
 
 	ctrl.app = app

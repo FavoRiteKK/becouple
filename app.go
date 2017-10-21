@@ -25,6 +25,7 @@ import (
 
 type BeCoupleApp struct {
 	WebCtrl *WebController
+	APICtrl *APIController
 	Router  *mux.Router
 	Ab      *authboss.Authboss
 	Storer  *appvendor.AuthStorer
@@ -35,7 +36,7 @@ func NewApp(authbossRootUrl string) *BeCoupleApp {
 
 	app.Storer = appvendor.NewAuthStorer()
 
-	app.SetupController()
+	app.SetupControllers()
 	app.SetupAuthBoss(authbossRootUrl)
 	app.SetupRouter()
 	app.SetupClientStore()
@@ -60,9 +61,12 @@ func NewApp(authbossRootUrl string) *BeCoupleApp {
 //    return app.storer
 //}
 
-func (app *BeCoupleApp) SetupController() {
-	ctrl := NewController(app)
-	app.WebCtrl = ctrl
+func (app *BeCoupleApp) SetupControllers() {
+	web := NewWebController(app)
+	app.WebCtrl = web
+
+	api := NewAPIController(app)
+	app.APICtrl = api
 }
 
 func (app *BeCoupleApp) SetupAuthBoss(rootUrl string) {
