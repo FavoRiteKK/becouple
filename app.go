@@ -24,7 +24,7 @@ import (
 )
 
 type BeCoupleApp struct {
-	Ctrl   *AppController
+	Ctrl   *WebController
 	Router *mux.Router
 	Ab     *authboss.Authboss
 	Storer *appvendor.AuthStorer
@@ -43,7 +43,7 @@ func NewApp(authbossRootUrl string) *BeCoupleApp {
 	return app
 }
 
-//func (app *BeCoupleApp) GetController() *AppController {
+//func (app *BeCoupleApp) GetController() *WebController {
 //    return app.ctrl
 //}
 //

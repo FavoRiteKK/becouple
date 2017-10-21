@@ -17,15 +17,15 @@ import (
 	"time"
 )
 
-type AppController struct {
+type WebController struct {
 	app        *BeCoupleApp
 	decoder    *schema.Decoder
 	templates  tpl.Templates
 	CsrfEnable bool
 }
 
-func NewController(app *BeCoupleApp) *AppController {
-	ctrl := new(AppController)
+func NewController(app *BeCoupleApp) *WebController {
+	ctrl := new(WebController)
 
 	ctrl.app = app
 	ctrl.decoder = schema.NewDecoder()
@@ -39,13 +39,13 @@ func NewController(app *BeCoupleApp) *AppController {
 }
 
 // route '/', '/blogs'
-func (ctrl *AppController) index(w http.ResponseWriter, r *http.Request) {
+func (ctrl *WebController) index(w http.ResponseWriter, r *http.Request) {
 	data := ctrl.layoutData(w, r).MergeKV("posts", blogs)
 	ctrl.mustRender(w, r, "index", data)
 }
 
 // route '/blogs/new
-func (ctrl *AppController) newblog(w http.ResponseWriter, r *http.Request) {
+func (ctrl *WebController) newblog(w http.ResponseWriter, r *http.Request) {
 	data := ctrl.layoutData(w, r).MergeKV("post", Blog{})
 	ctrl.mustRender(w, r, "new", data)
 }
@@ -53,7 +53,7 @@ func (ctrl *AppController) newblog(w http.ResponseWriter, r *http.Request) {
 var nextID = len(blogs) + 1
 
 // route /blogs/new
-func (ctrl *AppController) create(w http.ResponseWriter, r *http.Request) {
+func (ctrl *WebController) create(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if badRequest(w, err) {
 		return
@@ -77,7 +77,7 @@ func (ctrl *AppController) create(w http.ResponseWriter, r *http.Request) {
 }
 
 // route '/blogs/{id}/edit'
-func (ctrl *AppController) edit(w http.ResponseWriter, r *http.Request) {
+func (ctrl *WebController) edit(w http.ResponseWriter, r *http.Request) {
 	id, ok := ctrl.blogID(w, r)
 	if !ok {
 		return
@@ -88,7 +88,7 @@ func (ctrl *AppController) edit(w http.ResponseWriter, r *http.Request) {
 }
 
 // route '/blogs/{id}/edit'
-func (ctrl *AppController) update(w http.ResponseWriter, r *http.Request) {
+func (ctrl *WebController) update(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if badRequest(w, err) {
 		return
@@ -112,7 +112,7 @@ func (ctrl *AppController) update(w http.ResponseWriter, r *http.Request) {
 }
 
 // route '/blogs/{id}/destroy'
-func (ctrl *AppController) destroy(w http.ResponseWriter, r *http.Request) {
+func (ctrl *WebController) destroy(w http.ResponseWriter, r *http.Request) {
 	id, ok := ctrl.blogID(w, r)
 	if !ok {
 		return
@@ -124,7 +124,7 @@ func (ctrl *AppController) destroy(w http.ResponseWriter, r *http.Request) {
 }
 
 // route '/api/auth'
-func (ctrl *AppController) authenticate(w http.ResponseWriter, r *http.Request) {
+func (ctrl *WebController) authenticate(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("primaryID")
 	password := r.FormValue("password")
 
@@ -160,7 +160,7 @@ func (ctrl *AppController) authenticate(w http.ResponseWriter, r *http.Request) 
 	w.Write(jwtAuth)
 }
 
-func (ctrl *AppController) blogID(w http.ResponseWriter, r *http.Request) (int, bool) {
+func (ctrl *WebController) blogID(w http.ResponseWriter, r *http.Request) (int, bool) {
 	vars := mux.Vars(r)
 	str := vars["id"]
 
@@ -179,7 +179,7 @@ func (ctrl *AppController) blogID(w http.ResponseWriter, r *http.Request) (int, 
 	return id, true
 }
 
-func (ctrl *AppController) mustRender(w http.ResponseWriter, r *http.Request, name string, data authboss.HTMLData) {
+func (ctrl *WebController) mustRender(w http.ResponseWriter, r *http.Request, name string, data authboss.HTMLData) {
 	if ctrl.CsrfEnable {
         data.MergeKV("csrf_token", nosurf.Token(r))
     }
@@ -194,7 +194,7 @@ func (ctrl *AppController) mustRender(w http.ResponseWriter, r *http.Request, na
 	fmt.Fprintln(w, "Error occurred rendering templates:", err)
 }
 
-func (ctrl *AppController) layoutData(w http.ResponseWriter, r *http.Request) authboss.HTMLData {
+func (ctrl *WebController) layoutData(w http.ResponseWriter, r *http.Request) authboss.HTMLData {
 	currentUserName := ""
 	userInter, err := ctrl.app.Ab.CurrentUser(w, r)
 	if userInter != nil && err == nil {
