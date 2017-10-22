@@ -322,7 +322,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// if user is not confirmed
-	if user.Confirmed {
+	if !user.Confirmed {
 		response.ErrCode = models.ErrorAccountNotConfirmed
 		response.Err = "Account not confirmed"
 		json.NewEncoder(w).Encode(response)
@@ -355,6 +355,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 
 	response.Jwt = tokenString
 	response.Success = true
+	response.ErrCode = 0
 
 	json.NewEncoder(w).Encode(response)
 }

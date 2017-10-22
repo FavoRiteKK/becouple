@@ -8,7 +8,6 @@ import (
 	"becouple/appvendor"
 	jwtPkg "github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
-	"github.com/gin-gonic/gin/json"
 	"github.com/justinas/nosurf"
 	"gopkg.in/authboss.v1"
 	"regexp"
@@ -131,7 +130,7 @@ func (jwt *JwtAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// parse jwt token
-	bearer, err := request.ParseFromRequest(r, request.OAuth2Extractor, func(token *jwtPkg.Token) (interface{}, error) {
+	token, err := request.ParseFromRequest(r, request.OAuth2Extractor, func(token *jwtPkg.Token) (interface{}, error) {
 		b := []byte(appJwtSecret)
 		return b, nil
 	})
@@ -141,15 +140,22 @@ func (jwt *JwtAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jb, err := json.Marshal(bearer)
-	if err != nil {
-		http.Error(w, "Error marshal bearer", http.StatusInternalServerError)
-		return
+	// with token received, have request contains token information
+	claims, ok := token.Claims.(jwtPkg.MapClaims)
+	if !ok {
+		http.Error(w, "token's claims should be type MapClaims", http.StatusInternalServerError)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jb)
+	key, ok := claims["Id"].(string)
+	if !ok {
+		http.Error(w, "the claims should have attribute 'Id' of string", http.StatusInternalServerError)
+	} else if key == "" {
+		http.Error(w, "the claims should have attribute 'Id' of string", http.StatusInternalServerError)
+	}
 
+	r.Header.Set(authboss.StoreEmail, key)
+
+	// serve next
 	jwt.next.ServeHTTP(w, r)
 }
 

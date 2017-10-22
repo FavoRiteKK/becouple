@@ -11,6 +11,8 @@ import (
 	"testing"
 	"github.com/volatiletech/authboss"
 	"becouple/appvendor"
+	"fmt"
+	"github.com/davecgh/go-spew/spew"
 )
 
 func TestApiRegister(t *testing.T) {
@@ -115,4 +117,51 @@ func TestApiAuthenticateWrong(t *testing.T) {
 		t.Error("It encodes wrong error:", result.Err)
 	}
 
+}
+
+func TestApiLogout(t *testing.T) {
+	h := app.SetupMiddleware()
+
+	w := httptest.NewRecorder()
+	vals := url.Values{}
+
+	// login user first
+	email := "zeratul@heroes.com"
+	vals.Set("primaryID", email)
+	vals.Set("password", "1234")
+
+	r, _ := http.NewRequest("POST", "/api/auth", bytes.NewBufferString(vals.Encode()))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	h.ServeHTTP(w, r)
+	spew.Dump("/auth response body: ", w.Body.String())
+
+	// to retrieve jwt token
+	result := new(models.AuthResponse)
+	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
+		t.Error("It should response with proper type AuthResponse, compare above")
+	}
+
+	if result.Jwt == "" {
+		t.Error("It should return jwt token, but got ", result.Err)
+	}
+
+	// process logout function test
+	w = httptest.NewRecorder()
+	r, _ = http.NewRequest("POST", "/api/logout", nil)
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", result.Jwt))
+
+	h.ServeHTTP(w, r)
+	spew.Dump(">> /logout response body: ", w.Body.String(), "<<")
+	spew.Dump(">> request: ", r, "<<")
+
+	// test result
+	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
+		t.Error("Body response is malformed, compare above.")
+	}
+
+	if result.Success != true {
+		t.Error("Logout function seems malfunctioned")
+	}
 }

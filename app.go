@@ -3,7 +3,6 @@ package main
 import (
 	"becouple/appvendor"
 	"encoding/base64"
-	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
@@ -21,6 +20,8 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"becouple/models"
+	"encoding/json"
 )
 
 type BeCoupleApp struct {
@@ -168,9 +169,23 @@ func (app *BeCoupleApp) SetupRouter() {
 	apiRouter.HandleFunc("/register", app.APICtrl.register).Methods("POST")
 	apiRouter.HandleFunc("/auth", app.APICtrl.authenticate).Methods("POST")
 	apiRouter.HandleFunc("/logout", func(writer http.ResponseWriter, r *http.Request) {
-		fmt.Println("Inside /api/logout?")
+		resp := models.ServerResponse{
+			Success: true,
+		}
 
-	})
+		// if request is malformed
+		if key := r.Header.Get(authboss.StoreEmail); key == "" {
+			resp.Success = false
+			resp.ErrCode = models.ErrorGeneral
+			resp.Err = "Request not contain proper key (extracted from jwt middleware."
+
+			json.NewEncoder(writer).Encode(resp)
+			return
+		}
+
+		// request is fine
+		json.NewEncoder(writer).Encode(resp)
+	}).Methods("POST")
 
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
