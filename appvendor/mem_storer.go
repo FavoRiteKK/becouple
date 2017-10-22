@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gopkg.in/authboss.v1"
+	"github.com/davecgh/go-spew/spew"
 )
 
 var nextUserID int
@@ -72,8 +73,7 @@ func (s AuthStorer) Create(key string, attr authboss.Attributes) error {
 	nextUserID++
 
 	s.Users[key] = user
-	fmt.Println("Create")
-	//spew.Dump(s.Users)
+	spew.Dump(s.Users)
 	return nil
 }
 

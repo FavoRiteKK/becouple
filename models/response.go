@@ -4,7 +4,8 @@ package models
 
 type ServerResponse struct {
 	Success bool   `json:"success"`
-	Err     string `json:"err,omitempty"`
+	Err     string `json:"error,omitempty"`
+	ErrCode int   `json:"ecode,omitempty"`
 }
 
 type AuthResponse struct {

@@ -217,6 +217,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	response := models.AuthResponse{
 		ServerResponse: &models.ServerResponse{
 			Success: false,
+			ErrCode: models.ErrorGeneral,
 		},
 	}
 
@@ -253,9 +254,21 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//TODO test if user is confirmed, and user is not locked
+	// if user is not confirmed
+	if user.Confirmed {
+		response.ErrCode = models.ErrorAccountNotConfirmed
+		response.Err = "Account not confirmed"
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 
-	// process result success
+	// if user is still being locked
+	if user.Locked.After(time.Now().UTC()) {
+		response.ErrCode = models.ErrorAccountBeingLocked
+		response.Err = "Account is still locked. Try login again later"
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain.
