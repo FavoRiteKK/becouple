@@ -26,12 +26,6 @@
   version = "v3.1.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/gin-gonic/gin"
-  packages = ["json"]
-  revision = "b8b68314faa067acae5b17c828127b04af51ebe2"
-
-[[projects]]
   name = "github.com/go-playground/locales"
   packages = [".","currency"]
   revision = "e4cbcb5d0652150d40ad0646651076b6bd2be4f6"
@@ -84,12 +78,6 @@
   packages = ["."]
   revision = "ca9ada44574153444b00d3fd9c8559e4cc95f896"
   version = "v1.1"
-
-[[projects]]
-  name = "github.com/json-iterator/go"
-  packages = ["."]
-  revision = "6240e1e7983a85228f7fd9c3e1b6932d46ec58e2"
-  version = "1.0.3"
 
 [[projects]]
   branch = "master"
@@ -154,6 +142,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c91675422275fc16c8c5d83e002751571fffbd111d06acfb657a7ce5ffce1798"
+  inputs-digest = "7d44bc71b0763faf958c3f57d91a0dcbc4cbc23cd2da73ecccde17cebdc48d43"
   solver-name = "gps-cdcl"
   solver-version = 1
