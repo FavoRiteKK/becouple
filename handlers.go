@@ -200,6 +200,7 @@ func NewAPIController(app *BeCoupleApp) *APIController {
 			return err
 		}
 
+		//TODO sync with web client
 		if err := delegate.Var(password, "min=4,max=16"); err != nil {
 			return err
 		}
@@ -207,7 +208,73 @@ func NewAPIController(app *BeCoupleApp) *APIController {
 		return nil
 	}
 
+	api.validator["/register"] = api.validator["/auth"]
+
 	return api
+}
+
+// route '/api/register'
+func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
+
+	// default response to error
+	response := models.ServerResponse{
+		Success: false,
+		ErrCode: models.ErrorGeneral,
+	}
+
+	// validate input
+	if err := api.validator["/register"](r); err != nil {
+		response.Err = err.Error()
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	key := r.FormValue("primaryID")
+	password := r.FormValue("password")
+
+	log.Printf("pID: %v, pass: %v", key, password)
+	w.Header().Set("Content-Type", "application/json")
+
+	// get user from store and check if exists
+	obj, err := api.app.Storer.Get(key)
+	if err != nil && err != authboss.ErrUserNotFound {
+		// unknown error, prevent further register
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else if obj != nil {
+		// user already exists
+		response.Err = authboss.ErrUserFound.Error()
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// process registration
+	hashedPass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	attr, err := authboss.AttributesFromRequest(r) // Attributes from overriden forms
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	attr[authboss.StoreEmail] = key
+	attr[authboss.StorePassword] = string(hashedPass)
+
+	// insert user into store
+	if err := api.app.Storer.Create(key, attr); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// user register successful
+	response.Success = true
+	response.ErrCode = 0
+	json.NewEncoder(w).Encode(response)
+	return
 }
 
 // route '/api/auth'
@@ -235,7 +302,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// get primary from storer and check if exists
-	obj, err := api.app.Ab.Storer.Get(key)
+	obj, err := api.app.Storer.Get(key)
 	if err != nil {
 		response.Err = err.Error()
 		json.NewEncoder(w).Encode(response)

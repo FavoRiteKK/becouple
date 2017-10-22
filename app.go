@@ -126,7 +126,7 @@ func (app *BeCoupleApp) SetupAuthBoss(rootUrl string) {
 		authboss.Rules{
 			FieldName:       "password",
 			Required:        true,
-			MinLength:       8,
+			MinLength:       4,
 			MaxLength:       16,
 			AllowWhitespace: false,
 		},
@@ -165,6 +165,7 @@ func (app *BeCoupleApp) SetupRouter() {
 	}).Methods("GET")
 
 	// Api Routes
+	apiRouter.HandleFunc("/register", app.APICtrl.register).Methods("POST")
 	apiRouter.HandleFunc("/auth", app.APICtrl.authenticate).Methods("POST")
 	apiRouter.HandleFunc("/logout", func(writer http.ResponseWriter, r *http.Request) {
 		fmt.Println("Inside /api/logout?")
