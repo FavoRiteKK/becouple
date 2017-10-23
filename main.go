@@ -16,12 +16,14 @@ import (
 	_ "gopkg.in/authboss.v1/remember"
 )
 
-var funcs = template.FuncMap{
-	"formatDate": func(date time.Time) string {
-		return date.Format("2006/01/02 03:04pm")
-	},
-	"yield": func() string { return "" },
-}
+var (
+	funcs = template.FuncMap{
+		"formatDate": func(date time.Time) string {
+			return date.Format("2006/01/02 03:04pm")
+		},
+		"yield": func() string { return "" },
+	}
+)
 
 func main() {
 	// set address

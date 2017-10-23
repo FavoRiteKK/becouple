@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"becouple/appvendor"
 	jwtPkg "github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 	"github.com/justinas/nosurf"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/authboss.v1"
 	"regexp"
 )
@@ -24,10 +24,10 @@ func authProtect(f http.HandlerFunc, ab *authboss.Authboss) authProtector {
 
 func (ap authProtector) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if u, err := ap.ab.CurrentUser(w, r); err != nil {
-		log.Println("Error fetching current user:", err)
+		logrus.WithError(err).Errorln("error fetching current user")
 		w.WriteHeader(http.StatusInternalServerError)
 	} else if u == nil {
-		log.Println("Redirecting unauthorized user from:", r.URL.Path)
+		logrus.WithField("path", r.URL.Path).Errorln("Redirecting unauthorized user from path")
 		http.Redirect(w, r, "/", http.StatusFound)
 	} else {
 		ap.f(w, r)
@@ -43,7 +43,7 @@ func nosurfing(exemptedRegex interface{}) func(h http.Handler) http.Handler {
 		}
 
 		surfing.SetFailureHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log.Println("Failed to validate XSRF Token:", nosurf.Reason(r))
+			logrus.WithField("csrf_token", nosurf.Reason(r)).Errorln("Failed to validate XSRF Token")
 			w.WriteHeader(http.StatusBadRequest)
 		}))
 

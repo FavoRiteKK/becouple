@@ -93,6 +93,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/onrik/logrus"
+  packages = ["filename"]
+  revision = "76a6aad38cd58484ad16b91d5be1655a4af9c6a1"
+
+[[projects]]
+  branch = "master"
   name = "github.com/oxtoacart/bpool"
   packages = ["."]
   revision = "4e1c5567d7c2dd59fa4c7c83d34c2f3528b025d6"
@@ -148,12 +154,12 @@
 [[projects]]
   name = "gopkg.in/go-playground/validator.v9"
   packages = ["."]
-  revision = "a021b2ec9a8a8bb970f3f15bc42617cb520e8a64"
-  version = "v9.7.0"
+  revision = "1304298bf10d085adec514b076772a79c9cadb6b"
+  version = "v9.8.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "49f992ef7338b38268835d36aa35e4b4b225bfe5860fbdfc95985d0acf0768f4"
+  inputs-digest = "9262e1bd6ffd32081232e0d8b35b3435eecfff5d36c8d4f3762b2321c65225c8"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -4,7 +4,6 @@ import (
 	. "becouple"
 	"bytes"
 	"gopkg.in/authboss.v1"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -16,7 +15,6 @@ import (
 var app *BeCoupleApp
 
 func setup() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	port := os.Getenv("PORT")
 	if len(port) == 0 {

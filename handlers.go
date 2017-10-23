@@ -13,7 +13,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/authboss.v1"
 	"gopkg.in/go-playground/validator.v9"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -131,7 +130,6 @@ func (ctrl *WebController) blogID(w http.ResponseWriter, r *http.Request) (int, 
 
 	id, err := strconv.Atoi(str)
 	if err != nil {
-		log.Println("Error parsing blog id:", err)
 		http.Redirect(w, r, "/", http.StatusFound)
 		return 0, false
 	}
@@ -232,7 +230,6 @@ func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("primaryID")
 	password := r.FormValue("password")
 
-	log.Printf("pID: %v, pass: %v", key, password)
 	w.Header().Set("Content-Type", "application/json")
 
 	// get user from store and check if exists
@@ -298,7 +295,6 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("primaryID")
 	password := r.FormValue("password")
 
-	log.Printf("pID: %v, pass: %v", key, password)
 	w.Header().Set("Content-Type", "application/json")
 
 	// get primary from storer and check if exists

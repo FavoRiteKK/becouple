@@ -1,20 +1,20 @@
 package main_test
 
 import (
+	"becouple/appvendor"
 	"becouple/models"
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"github.com/volatiletech/authboss"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
-	"github.com/volatiletech/authboss"
-	"becouple/appvendor"
-	"fmt"
 )
 
-func TestApiRegister(t *testing.T) {
+func TestApiRegisterExist(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	vals := url.Values{}
@@ -46,16 +46,24 @@ func TestApiRegister(t *testing.T) {
 	if result.Err != authboss.ErrUserFound.Error() {
 		t.Error("It should be error 'user found':", result.Err)
 	}
+}
+
+func TestApiRegisterNew(t *testing.T) {
+	w := httptest.NewRecorder()
+	vals := url.Values{}
 
 	// test data: new account
-	email = "qwe@gmail.com"
+	email := "qwe@gmail.com"
+	pass := "qwe123"
 	vals.Set("primaryID", email)
 	vals.Set("password", pass)
 
-	r, _ = http.NewRequest("POST", "/api/register", bytes.NewBufferString(vals.Encode()))
+	r, _ := http.NewRequest("POST", "/api/register", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	app.Router.ServeHTTP(w, r)
+
+	result := new(models.ServerResponse)
 	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
 		t.Error("It should response with proper type ServerResponse:", result)
 	}
@@ -79,6 +87,7 @@ func TestApiRegister(t *testing.T) {
 			t.Error("The new user's password and input password not match")
 		}
 	}
+
 }
 
 func TestApiAuthenticateWrong(t *testing.T) {

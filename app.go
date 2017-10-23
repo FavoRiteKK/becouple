@@ -2,12 +2,16 @@ package main
 
 import (
 	"becouple/appvendor"
+	"becouple/models"
 	"encoding/base64"
+	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/justinas/alice"
 	"github.com/justinas/nosurf"
+	"github.com/onrik/logrus/filename"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"gopkg.in/authboss.v1"
@@ -20,8 +24,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"becouple/models"
-	"encoding/json"
 )
 
 type BeCoupleApp struct {
@@ -35,6 +37,7 @@ type BeCoupleApp struct {
 func NewApp(authbossRootUrl string) *BeCoupleApp {
 	app := &BeCoupleApp{}
 
+	app.BeforSetup()
 	app.Storer = appvendor.NewAuthStorer()
 
 	app.SetupControllers()
@@ -61,6 +64,10 @@ func NewApp(authbossRootUrl string) *BeCoupleApp {
 //func (app *BeCoupleApp) GetStorer() *appvendor.AuthStorer {
 //    return app.storer
 //}
+
+func (app *BeCoupleApp) BeforSetup() {
+	logrus.AddHook(filename.NewHook())
+}
 
 func (app *BeCoupleApp) SetupControllers() {
 	web := NewWebController(app)

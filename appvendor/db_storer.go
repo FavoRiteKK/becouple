@@ -3,12 +3,12 @@
 package appvendor
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/authboss.v1"
-	"log"
 	"time"
-	"database/sql"
 )
 
 type AuthUser struct {
@@ -47,13 +47,19 @@ type AuthStorer struct {
 }
 
 func NewAuthStorer() *AuthStorer {
+	// connect database first
+	if err := DBHelper.Connect(); err != nil {
+		logrus.WithError(err).Errorln("error connecting database")
+	}
+
+	// then instantiate our store object
 	return &AuthStorer{DBHelper}
 }
 
 func (s AuthStorer) Create(key string, attr authboss.Attributes) error {
 	var user AuthUser
 	if err := attr.Bind(&user, true); err != nil {
-		log.Println(err.Error())
+		logrus.WithError(err).Errorln("cannot bind attribute to user")
 		return err
 	}
 
@@ -62,7 +68,7 @@ func (s AuthStorer) Create(key string, attr authboss.Attributes) error {
 	// save to db
 	result, err := s.dbHelper.Insert(user.Email, user.Password, "Anonymous")
 	if err != nil {
-		log.Println("Error insert query: ", err.Error())
+		logrus.WithError(err).Errorln("error with insert user query")
 		return err
 	}
 
@@ -79,7 +85,7 @@ func (s AuthStorer) Put(key string, attr authboss.Attributes) error {
 func (s AuthStorer) Get(key string) (result interface{}, err error) {
 	row, err := s.dbHelper.GetUserByEmail(key)
 	if err != nil {
-		log.Println("Error select query", err.Error())
+		logrus.WithError(err).Errorln("error with get user query")
 		return nil, err
 	}
 
@@ -87,7 +93,7 @@ func (s AuthStorer) Get(key string) (result interface{}, err error) {
 
 	err = row.Scan(&user.ID, &user.Email, &user.Password)
 	if err != nil {
-		log.Println("Scan user error: ", err.Error())
+        logrus.WithError(err).Errorln("error scanning user")
 
 		if err == sql.ErrNoRows {
 			err = authboss.ErrUserNotFound
