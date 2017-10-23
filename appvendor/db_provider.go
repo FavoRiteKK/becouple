@@ -69,7 +69,7 @@ func (mgr *manager) Insert(email string, password string, fullname string) (sql.
 		return nil, err
 	}
 
-	stmt, err := mgr.db.Prepare("INSERT IGNORE INTO `user` (`password`, `fullname`) VALUES(?, ?, ?)")
+	stmt, err := mgr.db.Prepare("INSERT IGNORE INTO `user` (`email`, `password`, `fullname`) VALUES(?, ?, ?)")
 	if stmt != nil {
 		defer stmt.Close()
 	}

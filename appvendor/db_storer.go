@@ -93,10 +93,10 @@ func (s AuthStorer) Get(key string) (result interface{}, err error) {
 
 	err = row.Scan(&user.ID, &user.Email, &user.Password)
 	if err != nil {
-        logrus.WithError(err).Errorln("error scanning user")
-
 		if err == sql.ErrNoRows {
 			err = authboss.ErrUserNotFound
+		} else {
+			logrus.WithError(err).Errorln("error scanning user")
 		}
 
 		return nil, err
