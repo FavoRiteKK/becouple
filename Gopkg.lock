@@ -98,6 +98,12 @@
   revision = "4e1c5567d7c2dd59fa4c7c83d34c2f3528b025d6"
 
 [[projects]]
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
+  version = "v1.0.3"
+
+[[projects]]
   branch = "master"
   name = "github.com/volatiletech/authboss"
   packages = ["."]
@@ -106,7 +112,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["bcrypt","blowfish"]
+  packages = ["bcrypt","blowfish","ssh/terminal"]
   revision = "edd5e9b0879d13ee6970a50153d85b8fec9f7686"
 
 [[projects]]
@@ -120,6 +126,12 @@
   name = "golang.org/x/oauth2"
   packages = [".","google","internal","jws","jwt"]
   revision = "bb50c06baba3d0c76f9d125c0719093e315b5b44"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = ["unix","windows"]
+  revision = "8dbc5d05d6edcc104950cc299a1ce6641235bc86"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -142,6 +154,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7d44bc71b0763faf958c3f57d91a0dcbc4cbc23cd2da73ecccde17cebdc48d43"
+  inputs-digest = "49f992ef7338b38268835d36aa35e4b4b225bfe5860fbdfc95985d0acf0768f4"
   solver-name = "gps-cdcl"
   solver-version = 1

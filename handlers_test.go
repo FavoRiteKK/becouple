@@ -12,7 +12,6 @@ import (
 	"github.com/volatiletech/authboss"
 	"becouple/appvendor"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 )
 
 func TestApiRegister(t *testing.T) {
@@ -134,7 +133,6 @@ func TestApiLogout(t *testing.T) {
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	h.ServeHTTP(w, r)
-	spew.Dump("/auth response body: ", w.Body.String())
 
 	// to retrieve jwt token
 	result := new(models.AuthResponse)
@@ -153,8 +151,6 @@ func TestApiLogout(t *testing.T) {
 	r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", result.Jwt))
 
 	h.ServeHTTP(w, r)
-	spew.Dump(">> /logout response body: ", w.Body.String(), "<<")
-	spew.Dump(">> request: ", r, "<<")
 
 	// test result
 	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
