@@ -24,6 +24,7 @@
 					{{if not .loggedin}}
 					<li><a href="/auth/register">Register</a></li>
 					<li><a href="/auth/login"><i class="fa fa-sign-in"></i> Login</a></li>
+					<li><a href="/auth/oauth2/google"><i class="fa fa-sign-in"></i> Login Google</a></li>
 					{{else}}
 					<li class="dropdown">
 						<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Welcome {{.current_user_name}}! <span class="caret"></span></a>

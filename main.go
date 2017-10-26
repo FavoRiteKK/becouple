@@ -34,7 +34,7 @@ func main() {
 	addr := "localhost:" + port
 
 	// setup our app
-	app := NewApp(addr)
+	app := NewApp("http://" + addr)
 
 	// debug, list routes
 	//router := app.router

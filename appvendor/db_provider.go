@@ -78,7 +78,7 @@ func (mgr *manager) Insert(email string, password string, fullname string) (sql.
 		return nil, err
 	}
 
-	result, err := stmt.Exec("", password, fullname)
+	result, err := stmt.Exec(email, password, fullname)
 	return result, err
 }
 

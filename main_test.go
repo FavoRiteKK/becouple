@@ -21,7 +21,7 @@ func setup() {
 		port = "8000"
 	}
 	addr := "localhost:" + port
-	app = NewApp(addr)
+	app = NewApp("http://" + addr)
 
 	app.Ab.XSRFMaker = func(_ http.ResponseWriter, _ *http.Request) (token string) {
 		return "unused"

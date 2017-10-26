@@ -4,8 +4,6 @@ package appvendor
 
 import (
 	"database/sql"
-	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/authboss.v1"
 	"time"
@@ -72,8 +70,9 @@ func (s AuthStorer) Create(key string, attr authboss.Attributes) error {
 		return err
 	}
 
-	fmt.Println("==========> Create user result:")
-	spew.Dump(result)
+	if id, err := result.LastInsertId(); err == nil {
+		logrus.WithField("user_id", id).Infoln("Insert user OK")
+	}
 
 	return nil
 }

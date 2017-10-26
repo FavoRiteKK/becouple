@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/volatiletech/authboss"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
@@ -73,6 +74,8 @@ func TestApiRegisterNew(t *testing.T) {
 	}
 
 	obj, _ := app.Storer.Get(email)
+	spew.Dump(obj)
+
 	user, _ := obj.(*appvendor.AuthUser)
 	if user == nil {
 		t.Error("The user should be saved properly in the store.")
