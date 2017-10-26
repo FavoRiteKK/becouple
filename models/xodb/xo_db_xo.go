@@ -1,3 +1,5 @@
+//+build USE_DB_AUTH_STORER
+
 // Package xodb contains the types for schema 'app_mvp_dating'.
 package xodb
 

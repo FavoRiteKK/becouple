@@ -40,13 +40,22 @@ type User struct {
 	Confirmed          sql.NullBool   `json:"confirmed"`            // confirmed
 	AttemptNumber      sql.NullInt64  `json:"attempt_number"`       // attempt_number
 	AttemptTime        mysql.NullTime `json:"attempt_time"`         // attempt_time
-	Locked             sql.NullBool   `json:"locked"`               // locked
+	Locked             mysql.NullTime `json:"locked"`               // locked
 	RecoverToken       sql.NullString `json:"recover_token"`        // recover_token
 	RecoverTokenExpiry mysql.NullTime `json:"recover_token_expiry"` // recover_token_expiry
 	Deleted            sql.NullBool   `json:"deleted"`              // deleted
 
 	// xo fields
 	_exists bool
+}
+
+// if field type is enum, the object can't be insert with default value 0, so we must set default value here
+// to create new object (mostly for inserting)
+func NewLegalUser() *User {
+	return &User{
+		Gender: GenderX,
+		Status: StatusSingle,
+	}
 }
 
 // Exists determines if the User exists in the database.

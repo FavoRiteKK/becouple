@@ -3,6 +3,7 @@ package main
 import (
 	"becouple/appvendor"
 	"becouple/models"
+	"becouple/models/xodb"
 	"encoding/base64"
 	"encoding/json"
 	"github.com/gorilla/mux"
@@ -67,6 +68,12 @@ func NewApp(authbossRootUrl string) *BeCoupleApp {
 
 func (app *BeCoupleApp) BeforSetup() {
 	logrus.AddHook(filename.NewHook())
+	xodb.XOLog = func(query string, params ...interface{}) {
+		logrus.WithFields(logrus.Fields{
+			"query":  query,
+			"params": params,
+		}).Infoln("XOLog")
+	}
 }
 
 func (app *BeCoupleApp) SetupControllers() {

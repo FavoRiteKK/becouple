@@ -1,8 +1,8 @@
 package main
 
 import (
-	"becouple/appvendor"
 	"becouple/models"
+	"becouple/models/xodb"
 	"encoding/json"
 	"fmt"
 	"github.com/aarondl/tpl"
@@ -161,7 +161,7 @@ func (ctrl *WebController) layoutData(w http.ResponseWriter, r *http.Request) au
 	currentUserName := ""
 	userInter, err := ctrl.app.Ab.CurrentUser(w, r)
 	if userInter != nil && err == nil {
-		currentUserName = userInter.(*appvendor.AuthUser).Name
+		currentUserName = userInter.(*xodb.User).Fullname
 	}
 
 	return authboss.HTMLData{
@@ -305,7 +305,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := obj.(*appvendor.AuthUser)
+	user, ok := obj.(*xodb.User)
 	if !ok {
 		http.Error(w, "Storer should returns a type AuthUser", http.StatusInternalServerError)
 		return
@@ -318,7 +318,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// if user is not confirmed
-	if !user.Confirmed {
+	if user.Confirmed.Valid && user.Confirmed.Bool == false {
 		response.ErrCode = models.ErrorAccountNotConfirmed
 		response.Err = "Account not confirmed"
 		json.NewEncoder(w).Encode(response)
@@ -326,7 +326,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// if user is still being locked
-	if user.Locked.After(time.Now().UTC()) {
+	if user.Locked.Valid && user.Locked.Time.After(time.Now().UTC()) {
 		response.ErrCode = models.ErrorAccountBeingLocked
 		response.Err = "Account is still locked. Try login again later"
 		json.NewEncoder(w).Encode(response)

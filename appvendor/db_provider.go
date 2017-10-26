@@ -3,6 +3,7 @@
 package appvendor
 
 import (
+	"becouple/models/xodb"
 	"database/sql"
 	"errors"
 	_ "github.com/go-sql-driver/mysql"
@@ -12,8 +13,8 @@ import (
 type DBManager interface {
 	Connect() error
 	HasConn() (bool, error)
-	Insert(email string, password string, fullname string) (sql.Result, error)
-	GetUserByEmail(email string) (*sql.Row, error)
+	Insert(email string, password string, fullname string) error
+	GetUserByEmail(email string) (*xodb.User, error)
 }
 
 type manager struct {
@@ -64,38 +65,23 @@ func (mgr *manager) HasConn() (bool, error) {
 	return true, nil
 }
 
-func (mgr *manager) Insert(email string, password string, fullname string) (sql.Result, error) {
+func (mgr *manager) Insert(email string, password string, fullname string) error {
 	if ok, err := mgr.HasConn(); !ok {
-		return nil, err
+		return err
 	}
 
-	stmt, err := mgr.db.Prepare("INSERT IGNORE INTO `user` (`email`, `password`, `fullname`) VALUES(?, ?, ?)")
-	if stmt != nil {
-		defer stmt.Close()
-	}
+	user := xodb.NewLegalUser()
+	user.Email = email
+	user.Password = password
+	user.Fullname = fullname
 
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := stmt.Exec(email, password, fullname)
-	return result, err
+	return user.Save(mgr.db)
 }
 
-func (mgr *manager) GetUserByEmail(email string) (*sql.Row, error) {
+func (mgr *manager) GetUserByEmail(email string) (*xodb.User, error) {
 	if ok, err := mgr.HasConn(); !ok {
 		return nil, err
 	}
 
-	stmt, err := mgr.db.Prepare("SELECT `user_id`, `email`, `password` FROM `user` WHERE email = ? LIMIT 1")
-	if stmt != nil {
-		defer stmt.Close()
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	row := stmt.QueryRow(email)
-	return row, nil
+	return xodb.UserByEmail(mgr.db, email)
 }

@@ -1,8 +1,8 @@
 package main_test
 
 import (
-	"becouple/appvendor"
 	"becouple/models"
+	"becouple/models/xodb"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -76,13 +76,13 @@ func TestApiRegisterNew(t *testing.T) {
 	obj, _ := app.Storer.Get(email)
 	spew.Dump(obj)
 
-	user, _ := obj.(*appvendor.AuthUser)
+	user, _ := obj.(*xodb.User)
 	if user == nil {
 		t.Error("The user should be saved properly in the store.")
 	}
 
 	if user != nil {
-		if user.Confirmed != false {
+		if user.Confirmed.Valid && user.Confirmed.Bool == true {
 			t.Error("The new user's confirmation should be false")
 		}
 
@@ -90,6 +90,8 @@ func TestApiRegisterNew(t *testing.T) {
 			t.Error("The new user's password and input password not match")
 		}
 	}
+
+	//TODO delete user
 
 }
 
