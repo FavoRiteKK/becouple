@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"becouple/appvendor"
 	"becouple/models"
 	"becouple/models/xodb"
 	"bytes"
@@ -23,8 +24,10 @@ func TestApiRegisterExist(t *testing.T) {
 	// test data: already exist
 	email := "zeratul@heroes.com"
 	pass := "qwe123"
-	vals.Set("primaryID", email)
-	vals.Set("password", pass)
+	fullName := "notimportant"
+	vals.Set(appvendor.PropPrimaryID, email)
+	vals.Set(appvendor.PropPassword, pass)
+	vals.Set(appvendor.PropFullName, fullName)
 
 	r, _ := http.NewRequest("POST", "/api/register", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -56,8 +59,10 @@ func TestApiRegisterNew(t *testing.T) {
 	// test data: new account
 	email := "qwe@gmail.com"
 	pass := "qwe123"
-	vals.Set("primaryID", email)
-	vals.Set("password", pass)
+	fullName := "test master"
+	vals.Set(appvendor.PropPrimaryID, email)
+	vals.Set(appvendor.PropPassword, pass)
+	vals.Set(appvendor.PropFullName, fullName)
 
 	r, _ := http.NewRequest("POST", "/api/register", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -101,8 +106,8 @@ func TestApiAuthenticateWrong(t *testing.T) {
 	vals := url.Values{}
 
 	email := "zeratul@heroes.com"
-	vals.Set("primaryID", email)
-	vals.Set("password", "qweasd123") // wrong password
+	vals.Set(appvendor.PropPrimaryID, email)
+	vals.Set(appvendor.PropPassword, "qweasd123") // wrong password
 
 	r, _ := http.NewRequest("POST", "/api/auth", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -140,8 +145,8 @@ func TestApiLogout(t *testing.T) {
 
 	// login user first
 	email := "zeratul@heroes.com"
-	vals.Set("primaryID", email)
-	vals.Set("password", "1234")
+	vals.Set(appvendor.PropPrimaryID, email)
+	vals.Set(appvendor.PropPassword, "1234")
 
 	r, _ := http.NewRequest("POST", "/api/auth", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")

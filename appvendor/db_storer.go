@@ -30,10 +30,8 @@ func (s AuthStorer) Create(key string, attr authboss.Attributes) error {
 		return err
 	}
 
-	//TODO get user's fullname somehow
-
 	// save to db
-	err := s.dbHelper.Insert(user.Email, user.Password, "Anonymous")
+	err := s.dbHelper.Insert(user.Email, user.Password, user.Fullname)
 	if err != nil {
 		logrus.WithError(err).Errorln("error with insert user query")
 		return err

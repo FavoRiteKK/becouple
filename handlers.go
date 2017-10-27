@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
 	"github.com/justinas/nosurf"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/authboss.v1"
 	"gopkg.in/go-playground/validator.v9"
@@ -180,34 +181,49 @@ func (ctrl *WebController) layoutData(w http.ResponseWriter, r *http.Request) au
 
 type APIController struct {
 	app       *BeCoupleApp
-	validator map[string]func(r *http.Request) error
+	validator map[string]func(r *http.Request) []error
 }
 
 func NewAPIController(app *BeCoupleApp) *APIController {
 	api := new(APIController)
 	api.app = app
-	api.validator = make(map[string]func(r *http.Request) error)
+	api.validator = make(map[string]func(r *http.Request) []error)
 
 	delegate := validator.New()
 
 	// make validators
-	api.validator["/auth"] = func(r *http.Request) error {
-		key := r.FormValue("primaryID")
-		password := r.FormValue("password")
+	api.validator["/auth"] = func(r *http.Request) []error {
+		var errs []error
+
+		key := r.FormValue(appvendor.PropPrimaryID)
+		password := r.FormValue(appvendor.PropPassword)
 
 		if err := delegate.Var(key, "email"); err != nil {
-			return err
+			logrus.WithError(err).Errorln("validate email")
+			errs = append(errs, err)
 		}
 
 		//TODO sync with web client
 		if err := delegate.Var(password, "min=4,max=16"); err != nil {
-			return err
+			logrus.WithError(err).Errorln("validate password")
+			errs = append(errs, err)
 		}
 
-		return nil
+		return errs
 	}
 
-	api.validator["/register"] = api.validator["/auth"]
+	api.validator["/register"] = func(r *http.Request) []error {
+		errs := api.validator["/auth"](r)
+
+		fullname := r.FormValue(appvendor.PropFullName)
+
+		if err := delegate.Var(fullname, "min=1,max=45"); err != nil {
+			logrus.WithError(err).Errorln("validate full name")
+			errs = append(errs, err)
+		}
+
+		return errs
+	}
 
 	return api
 }
@@ -221,17 +237,18 @@ func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
 		ErrCode: appvendor.ErrorGeneral,
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+
 	// validate input
-	if err := api.validator["/register"](r); err != nil {
-		response.Err = err.Error()
+	if errs := api.validator["/register"](r); len(errs) > 0 {
+		response.Err = ConcateErrorWith(errs, "\n")
 		json.NewEncoder(w).Encode(response)
 		return
 	}
 
-	key := r.FormValue("primaryID")
-	password := r.FormValue("password")
-
-	w.Header().Set("Content-Type", "application/json")
+	key := r.FormValue(appvendor.PropPrimaryID)
+	password := r.FormValue(appvendor.PropPassword)
+	fullname := r.FormValue(appvendor.PropFullName)
 
 	// get user from store and check if exists
 	obj, err := api.app.Storer.Get(key)
@@ -259,8 +276,9 @@ func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attr[authboss.StoreEmail] = key
-	attr[authboss.StorePassword] = string(hashedPass)
+	attr[appvendor.PropEmail] = key
+	attr[appvendor.PropPassword] = string(hashedPass)
+	attr[appvendor.PropFullName] = fullname
 
 	// insert user into store
 	if err := api.app.Storer.Create(key, attr); err != nil {
@@ -287,8 +305,8 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// validate input
-	if err := api.validator["/auth"](r); err != nil {
-		response.Err = err.Error()
+	if errs := api.validator["/auth"](r); errs != nil {
+		response.Err = ConcateErrorWith(errs, "\n")
 		json.NewEncoder(w).Encode(response)
 		return
 	}
