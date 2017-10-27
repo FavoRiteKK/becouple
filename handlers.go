@@ -62,8 +62,6 @@ func (ctrl *WebController) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Validation
-
 	var b Blog
 	if badRequest(w, ctrl.decoder.Decode(&b, r.PostForm)) {
 		return
@@ -101,8 +99,6 @@ func (ctrl *WebController) update(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-
-	// TODO: Validation
 
 	var b = blogs.Get(id)
 	if badRequest(w, ctrl.decoder.Decode(b, r.PostForm)) {
