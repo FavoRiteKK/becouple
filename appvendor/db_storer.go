@@ -23,15 +23,15 @@ func NewAuthStorer() *AuthStorer {
 	return &AuthStorer{DBHelper}
 }
 
-func (s AuthStorer) Create(key string, attr authboss.Attributes) error {
-	var user xodb.User
-	if err := attr.Bind(&user, true); err != nil {
+func (s AuthStorer) Create(_ string, attr authboss.Attributes) error {
+	user := xodb.NewLegalUser()
+	if err := BindAuthbossUser(user, attr); err != nil {
 		logrus.WithError(err).Errorln("cannot bind attribute to user")
 		return err
 	}
 
 	// save to db
-	err := s.dbHelper.Insert(user.Email, user.Password, user.Fullname)
+	err := s.dbHelper.Insert(user)
 	if err != nil {
 		logrus.WithError(err).Errorln("error with insert user query")
 		return err
@@ -41,7 +41,25 @@ func (s AuthStorer) Create(key string, attr authboss.Attributes) error {
 }
 
 func (s AuthStorer) Put(key string, attr authboss.Attributes) error {
-	return s.Create(key, attr)
+	user, err := s.dbHelper.GetUserByEmail(key)
+	if err != nil {
+		logrus.WithError(err).Errorln("cannot bind attribute to user")
+		return err
+	}
+
+	err = BindAuthbossUser(user, attr)
+	if err != nil {
+		logrus.WithError(err).Errorln("cannot bind attribute to user")
+		return err
+	}
+
+	err = s.dbHelper.SaveUser(user)
+	if err != nil {
+		logrus.WithError(err).Errorln("error with save user query")
+		return err
+	}
+
+	return nil
 }
 
 func (s AuthStorer) Get(key string) (result interface{}, err error) {

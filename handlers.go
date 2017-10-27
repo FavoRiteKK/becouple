@@ -20,6 +20,10 @@ import (
 	"time"
 )
 
+//=============================================================
+// type WebController
+//=============================================================
+
 type WebController struct {
 	app        *BeCoupleApp
 	decoder    *schema.Decoder
@@ -237,7 +241,7 @@ func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
 
 	// validate input
 	if errs := api.validator["/register"](r); len(errs) > 0 {
-		response.Err = ConcateErrorWith(errs, "\n")
+		response.Err = appvendor.ConcateErrorWith(errs, "\n")
 		json.NewEncoder(w).Encode(response)
 		return
 	}
@@ -282,6 +286,14 @@ func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// fire authbosss afterEvent (to update user after registration step, ex: generate confirm token)
+	ctx := api.app.Ab.InitContext(w, r)
+	ctx.User = attr
+	if err := api.app.Ab.Callbacks.FireAfter(authboss.EventRegister, ctx); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	// user register successful
 	response.Success = true
 	response.ErrCode = 0
@@ -302,7 +314,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 
 	// validate input
 	if errs := api.validator["/auth"](r); errs != nil {
-		response.Err = ConcateErrorWith(errs, "\n")
+		response.Err = appvendor.ConcateErrorWith(errs, "\n")
 		json.NewEncoder(w).Encode(response)
 		return
 	}
@@ -333,7 +345,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// if user is not confirmed
-	if user.Confirmed.Valid && user.Confirmed.Bool == false {
+	if user.Confirmed == false {
 		response.ErrCode = appvendor.ErrorAccountNotConfirmed
 		response.Err = "Account not confirmed"
 		json.NewEncoder(w).Encode(response)
@@ -341,7 +353,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// if user is still being locked
-	if user.Locked.Valid && user.Locked.Time.After(time.Now().UTC()) {
+	if user.Locked.After(time.Now().UTC()) {
 		response.ErrCode = appvendor.ErrorAccountBeingLocked
 		response.Err = "Account is still locked. Try login again later"
 		json.NewEncoder(w).Encode(response)

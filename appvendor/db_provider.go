@@ -13,8 +13,11 @@ import (
 type DBManager interface {
 	Connect() error
 	HasConn() (bool, error)
-	Insert(email string, password string, fullname string) error
+	Insert(user *xodb.User) error
 	GetUserByEmail(email string) (*xodb.User, error)
+
+	SaveUser(user *xodb.User) error
+
 	DeleteUser(user *xodb.User) error
 	DeletePermanently(user *xodb.User) error
 }
@@ -67,15 +70,10 @@ func (mgr *manager) HasConn() (bool, error) {
 	return true, nil
 }
 
-func (mgr *manager) Insert(email string, password string, fullname string) error {
+func (mgr *manager) Insert(user *xodb.User) error {
 	if ok, err := mgr.HasConn(); !ok {
 		return err
 	}
-
-	user := xodb.NewLegalUser()
-	user.Email = email
-	user.Password = password
-	user.Fullname = fullname
 
 	return user.Save(mgr.db)
 }
@@ -86,6 +84,14 @@ func (mgr *manager) GetUserByEmail(email string) (*xodb.User, error) {
 	}
 
 	return xodb.UserByEmail(mgr.db, email)
+}
+
+func (mgr *manager) SaveUser(user *xodb.User) error {
+	if ok, err := mgr.HasConn(); !ok {
+		return err
+	}
+
+	return user.Save(mgr.db)
 }
 
 func (mgr *manager) DeleteUser(user *xodb.User) error {

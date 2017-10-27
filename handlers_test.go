@@ -7,8 +7,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/volatiletech/authboss"
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/authboss.v1"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -86,7 +86,7 @@ func TestApiRegisterNew(t *testing.T) {
 	}
 
 	if user != nil {
-		if user.Confirmed.Valid && user.Confirmed.Bool == true {
+		if user.Confirmed == true {
 			t.Error("The new user's confirmation should be false")
 		}
 
@@ -100,9 +100,9 @@ func TestApiRegisterNew(t *testing.T) {
 	}
 
 	// clean up user
-	if user != nil {
-		app.Storer.DeletePermanently(user)
-	}
+	//if user != nil {
+	//	app.Storer.DeletePermanently(user)
+	//}
 
 }
 
