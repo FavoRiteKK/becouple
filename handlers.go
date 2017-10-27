@@ -1,6 +1,7 @@
 package main
 
 import (
+	"becouple/appvendor"
 	"becouple/models"
 	"becouple/models/xodb"
 	"encoding/json"
@@ -217,7 +218,7 @@ func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
 	// default response to error
 	response := models.ServerResponse{
 		Success: false,
-		ErrCode: models.ErrorGeneral,
+		ErrCode: appvendor.ErrorGeneral,
 	}
 
 	// validate input
@@ -281,7 +282,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	response := models.AuthResponse{
 		ServerResponse: &models.ServerResponse{
 			Success: false,
-			ErrCode: models.ErrorGeneral,
+			ErrCode: appvendor.ErrorGeneral,
 		},
 	}
 
@@ -319,7 +320,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 
 	// if user is not confirmed
 	if user.Confirmed.Valid && user.Confirmed.Bool == false {
-		response.ErrCode = models.ErrorAccountNotConfirmed
+		response.ErrCode = appvendor.ErrorAccountNotConfirmed
 		response.Err = "Account not confirmed"
 		json.NewEncoder(w).Encode(response)
 		return
@@ -327,7 +328,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 
 	// if user is still being locked
 	if user.Locked.Valid && user.Locked.Time.After(time.Now().UTC()) {
-		response.ErrCode = models.ErrorAccountBeingLocked
+		response.ErrCode = appvendor.ErrorAccountBeingLocked
 		response.Err = "Account is still locked. Try login again later"
 		json.NewEncoder(w).Encode(response)
 		return

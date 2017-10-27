@@ -190,7 +190,7 @@ func (app *BeCoupleApp) SetupRouter() {
 		// if request is malformed
 		if key := r.Header.Get(authboss.StoreEmail); key == "" {
 			resp.Success = false
-			resp.ErrCode = models.ErrorGeneral
+			resp.ErrCode = appvendor.ErrorGeneral
 			resp.Err = "Request not contain proper key (extracted from jwt middleware."
 
 			json.NewEncoder(writer).Encode(resp)
