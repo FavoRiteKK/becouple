@@ -124,12 +124,12 @@ func (app *BeCoupleApp) SetupAuthBoss(rootUrl string) {
 
 	ab.EmailFrom = "khiemnv@rikkeisoft.com"
 
-	//TODO change to SMTPMailer in production
+	//TODO [production] change to SMTPMailer in
 	ab.Mailer = authboss.LogMailer(os.Stdout)
 	//ab.Mailer = authboss.SMTPMailer("smtp.gmail.com:587",
 	//	smtp.PlainAuth("", ab.EmailFrom, smtpGMailPass, "smtp.gmail.com"))
 
-	// TODO may change these when go production
+	// TODO [production] may change these when go
 	ab.Policies = []authboss.Validator{
 		authboss.Rules{
 			FieldName:       "email",

@@ -203,7 +203,7 @@ func NewAPIController(app *BeCoupleApp) *APIController {
 			errs = append(errs, err)
 		}
 
-		//TODO sync with web client
+		//TODO [production] sync with web client
 		if err := delegate.Var(password, "min=4,max=16"); err != nil {
 			logrus.WithError(err).Errorln("validate password")
 			errs = append(errs, err)
@@ -357,7 +357,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	token := jwtPkg.NewWithClaims(appJwtSigningMethod, jwtPkg.MapClaims{
 		"Id":  key,
 		"exp": time.Now().Add(time.Minute * 10).Unix(),
-		//TODO may change these when go live
+		//TODO [production] may change these when go live
 	})
 
 	// Sign and get the complete encoded token as a string using the secret
