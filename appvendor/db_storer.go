@@ -84,3 +84,11 @@ func (s AuthStorer) ConfirmUser(tok string) (result interface{}, err error) {
 func (s AuthStorer) RecoverUser(rec string) (result interface{}, err error) {
 	return nil, authboss.ErrUserNotFound
 }
+
+func (s AuthStorer) DeleteUser(user *xodb.User) error {
+	return s.dbHelper.DeleteUser(user)
+}
+
+func (s AuthStorer) DeletePermanently(user *xodb.User) error {
+	return s.dbHelper.DeletePermanently(user)
+}

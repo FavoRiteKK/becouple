@@ -168,6 +168,36 @@ func (u *User) Delete(db XODB) error {
 	return nil
 }
 
+// Delete permanently the User from the database.
+func (u *User) DeletePermanently(db XODB) error {
+	var err error
+
+	// if doesn't exist, bail
+	if !u._exists {
+		return nil
+	}
+
+	// if deleted, bail
+	if u.Deleted.Valid && u.Deleted.Bool == true {
+		return nil
+	}
+
+	// sql query
+	const sqlstr = `DELETE FROM app_mvp_dating.user WHERE user_id = ?`
+
+	// run query
+	XOLog(sqlstr, u.UserID)
+	_, err = db.Exec(sqlstr, u.UserID)
+	if err != nil {
+		return err
+	}
+
+	// set deleted
+	u.Deleted = sql.NullBool{Bool: true, Valid: true}
+
+	return nil
+}
+
 // UserByEmail retrieves a row from 'app_mvp_dating.user' as a User.
 //
 // Generated from index 'email_UNIQUE'.

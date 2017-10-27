@@ -15,6 +15,8 @@ type DBManager interface {
 	HasConn() (bool, error)
 	Insert(email string, password string, fullname string) error
 	GetUserByEmail(email string) (*xodb.User, error)
+	DeleteUser(user *xodb.User) error
+	DeletePermanently(user *xodb.User) error
 }
 
 type manager struct {
@@ -84,4 +86,20 @@ func (mgr *manager) GetUserByEmail(email string) (*xodb.User, error) {
 	}
 
 	return xodb.UserByEmail(mgr.db, email)
+}
+
+func (mgr *manager) DeleteUser(user *xodb.User) error {
+	if ok, err := mgr.HasConn(); !ok {
+		return err
+	}
+
+	return user.Delete(mgr.db)
+}
+
+func (mgr *manager) DeletePermanently(user *xodb.User) error {
+	if ok, err := mgr.HasConn(); !ok {
+		return err
+	}
+
+	return user.DeletePermanently(mgr.db)
 }

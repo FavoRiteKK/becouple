@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/volatiletech/authboss"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
@@ -79,7 +78,7 @@ func TestApiRegisterNew(t *testing.T) {
 	}
 
 	obj, _ := app.Storer.Get(email)
-	spew.Dump(obj)
+	//spew.Dump(obj)
 
 	user, _ := obj.(*xodb.User)
 	if user == nil {
@@ -94,9 +93,16 @@ func TestApiRegisterNew(t *testing.T) {
 		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(pass)); err != nil {
 			t.Error("The new user's password and input password not match")
 		}
+
+		if user.Fullname != fullName {
+			t.Error("The new user's full name and input full name not match")
+		}
 	}
 
-	//TODO delete user
+	// clean up user
+	if user != nil {
+		app.Storer.DeletePermanently(user)
+	}
 
 }
 
