@@ -1,5 +1,3 @@
-//+build !USE_DB_AUTH_STORER
-
 package appvendor
 
 import (
