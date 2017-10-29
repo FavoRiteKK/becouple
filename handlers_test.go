@@ -8,8 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/volatiletech/authboss"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/authboss.v1"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -17,6 +17,7 @@ import (
 )
 
 func TestApiRegisterExist(t *testing.T) {
+	h := app.SetupMiddleware()
 
 	w := httptest.NewRecorder()
 	vals := url.Values{}
@@ -32,7 +33,7 @@ func TestApiRegisterExist(t *testing.T) {
 	r, _ := http.NewRequest("POST", "/api/register", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	app.Router.ServeHTTP(w, r)
+	h.ServeHTTP(w, r)
 
 	result := new(models.ServerResponse)
 	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
@@ -53,6 +54,8 @@ func TestApiRegisterExist(t *testing.T) {
 }
 
 func TestApiRegisterNew(t *testing.T) {
+	h := app.SetupMiddleware()
+
 	w := httptest.NewRecorder()
 	vals := url.Values{}
 
@@ -67,8 +70,7 @@ func TestApiRegisterNew(t *testing.T) {
 	r, _ := http.NewRequest("POST", "/api/register", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	app.Router.ServeHTTP(w, r)
-
+	h.ServeHTTP(w, r)
 	result := new(models.ServerResponse)
 	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
 		t.Error("POST /api/register should response with proper type ServerResponse:", result)
@@ -107,7 +109,55 @@ func TestApiRegisterNew(t *testing.T) {
 
 }
 
+func TestApiConfirmUser(t *testing.T) {
+	h := app.SetupMiddleware()
+
+	w := httptest.NewRecorder()
+	vals := url.Values{}
+
+	// login user first
+	email := "qwe@gmail.com"
+	vals.Set(appvendor.PropPrimaryID, email)
+	vals.Set(appvendor.PropPassword, "qwe123")
+
+	r, _ := http.NewRequest("POST", "/api/auth", bytes.NewBufferString(vals.Encode()))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	h.ServeHTTP(w, r)
+
+	// to retrieve jwt token
+	result := new(models.AuthResponse)
+	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
+		t.Error("It should response with proper type AuthResponse, compare above")
+	}
+
+	if result.Jwt == "" {
+		t.Error("It should return jwt token, but got ", result.Err)
+	}
+
+	// process confirm function test
+	vals = url.Values{}
+	vals.Set(appvendor.PropConfirmToken, "ynwann")
+
+	w = httptest.NewRecorder()
+	r, _ = http.NewRequest("POST", "/api/confirm", bytes.NewBufferString(vals.Encode()))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", result.Jwt))
+
+	h.ServeHTTP(w, r)
+
+	// test result
+	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
+		t.Error("Body response is malformed, compare above.")
+	}
+
+	if result.Success != true {
+		t.Error("Confirm function seems malfunctioned")
+	}
+}
+
 func TestApiAuthenticateWrong(t *testing.T) {
+	h := app.SetupMiddleware()
 
 	w := httptest.NewRecorder()
 	vals := url.Values{}
@@ -119,7 +169,7 @@ func TestApiAuthenticateWrong(t *testing.T) {
 	r, _ := http.NewRequest("POST", "/api/auth", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	app.Router.ServeHTTP(w, r)
+	h.ServeHTTP(w, r)
 
 	result := new(models.AuthResponse)
 	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
@@ -145,6 +195,7 @@ func TestApiAuthenticateWrong(t *testing.T) {
 }
 
 func TestApiAuthenticateSuccess(t *testing.T) {
+	h := app.SetupMiddleware()
 
 	w := httptest.NewRecorder()
 	vals := url.Values{}
@@ -156,7 +207,7 @@ func TestApiAuthenticateSuccess(t *testing.T) {
 	r, _ := http.NewRequest("POST", "/api/auth", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	app.Router.ServeHTTP(w, r)
+	h.ServeHTTP(w, r)
 
 	result := new(models.AuthResponse)
 	if err := json.NewDecoder(w.Body).Decode(result); err != nil {

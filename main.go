@@ -8,12 +8,12 @@ import (
 	"os"
 	"time"
 
-	_ "gopkg.in/authboss.v1/auth"
-	_ "gopkg.in/authboss.v1/confirm"
-	_ "gopkg.in/authboss.v1/lock"
-	_ "gopkg.in/authboss.v1/recover"
-	_ "gopkg.in/authboss.v1/register"
-	_ "gopkg.in/authboss.v1/remember"
+	_ "github.com/volatiletech/authboss/auth"
+	_ "github.com/volatiletech/authboss/confirm"
+	_ "github.com/volatiletech/authboss/lock"
+	_ "github.com/volatiletech/authboss/recover"
+	_ "github.com/volatiletech/authboss/register"
+	_ "github.com/volatiletech/authboss/remember"
 )
 
 var (

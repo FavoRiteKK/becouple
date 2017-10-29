@@ -12,11 +12,12 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/justinas/nosurf"
 	"github.com/sirupsen/logrus"
+	"github.com/volatiletech/authboss"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/authboss.v1"
 	"gopkg.in/go-playground/validator.v9"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -225,6 +226,25 @@ func NewAPIController(app *BeCoupleApp) *APIController {
 		return errs
 	}
 
+	api.validator["/confirm"] = func(r *http.Request) []error {
+		var errs []error
+
+		email := r.Header.Get(appvendor.PropEmail)
+		if err := delegate.Var(email, "email"); err != nil {
+			logrus.WithError(err).Errorln("validate email")
+			errs = append(errs, err)
+		}
+
+		cnfToken := r.FormValue(appvendor.PropConfirmToken)
+
+		if err := delegate.Var(cnfToken, "len=6"); err != nil {
+			logrus.WithError(err).Errorln("validate confirm token")
+			errs = append(errs, err)
+		}
+
+		return errs
+	}
+
 	return api
 }
 
@@ -301,6 +321,67 @@ func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// route '/api/confirm'
+func (api *APIController) confirm(w http.ResponseWriter, r *http.Request) {
+
+	// default response to error
+	response := models.AuthResponse{
+		ServerResponse: &models.ServerResponse{
+			Success: false,
+			ErrCode: appvendor.ErrorGeneral,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// validate input
+	if errs := api.validator["/confirm"](r); errs != nil {
+		response.Err = appvendor.ConcateErrorWith(errs, "\n")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	email := r.Header.Get(appvendor.PropEmail)
+	cnfToken := r.FormValue(appvendor.PropConfirmToken)
+
+	// get user from storer and check if exists
+	obj, err := api.app.Storer.Get(email)
+	if err != nil {
+		response.Err = err.Error()
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	user, ok := obj.(*xodb.User)
+	if !ok {
+		appvendor.InternalServerError(w, "Storer should returns a type AuthUser")
+		return
+	}
+
+	// compare confirm token
+	if user.Confirmed == true || user.ConfirmToken != strings.ToUpper(cnfToken) {
+		response.ErrCode = appvendor.ErrorAccountCannotConfirm
+		response.Err = "Cannot confirm the issuer"
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// update user
+	attr := authboss.Attributes{}
+	attr[appvendor.PropConfirmToken] = ""
+	attr[appvendor.PropConfirmed] = true
+
+	if err := api.app.Storer.Put(email, attr); err != nil {
+		appvendor.InternalServerError(w, "Cannot update attributes of confirmed user")
+		return
+	}
+
+	response.Success = true
+	response.ErrCode = 0
+
+	json.NewEncoder(w).Encode(response)
+}
+
 // route '/api/auth'
 func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 
@@ -312,6 +393,8 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+
 	// validate input
 	if errs := api.validator["/auth"](r); errs != nil {
 		response.Err = appvendor.ConcateErrorWith(errs, "\n")
@@ -319,10 +402,8 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := r.FormValue("primaryID")
-	password := r.FormValue("password")
-
-	w.Header().Set("Content-Type", "application/json")
+	key := r.FormValue(appvendor.PropPrimaryID)
+	password := r.FormValue(appvendor.PropPassword)
 
 	// get primary from storer and check if exists
 	obj, err := api.app.Storer.Get(key)
@@ -344,22 +425,6 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// if user is not confirmed
-	if user.Confirmed == false {
-		response.ErrCode = appvendor.ErrorAccountNotConfirmed
-		response.Err = "Account not confirmed"
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	// if user is still being locked
-	if user.Locked.Valid && user.Locked.Time.After(time.Now().UTC()) {
-		response.ErrCode = appvendor.ErrorAccountBeingLocked
-		response.Err = "Account is still locked. Try login again later"
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain.
 	token := jwtPkg.NewWithClaims(appJwtSigningMethod, jwtPkg.MapClaims{
@@ -377,6 +442,23 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Jwt = tokenString
+
+	// if user is not confirmed
+	if user.Confirmed == false {
+		response.ErrCode = appvendor.ErrorAccountNotConfirmed
+		response.Err = "Account not confirmed"
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// if user is still being locked
+	if user.Locked.Valid && user.Locked.Time.After(time.Now().UTC()) {
+		response.ErrCode = appvendor.ErrorAccountBeingLocked
+		response.Err = "Account is still locked. Try login again later"
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
 	response.Success = true
 	response.ErrCode = 0
 

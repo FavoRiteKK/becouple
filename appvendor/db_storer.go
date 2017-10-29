@@ -4,7 +4,7 @@ import (
 	"becouple/models/xodb"
 	"database/sql"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/authboss.v1"
+	"github.com/volatiletech/authboss"
 )
 
 type AuthStorer struct {

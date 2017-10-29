@@ -3,7 +3,7 @@ package main_test
 import (
 	. "becouple"
 	"bytes"
-	"gopkg.in/authboss.v1"
+	"github.com/volatiletech/authboss"
 	"net/http"
 	"net/http/httptest"
 	"net/url"

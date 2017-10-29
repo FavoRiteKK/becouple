@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
-	"gopkg.in/authboss.v1"
+	"github.com/volatiletech/authboss"
 )
 
 const SessionCookieName = "ab_blog"

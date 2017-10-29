@@ -3,7 +3,7 @@ package appvendor
 import (
 	"becouple/models/xodb"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/authboss.v1"
+	"github.com/volatiletech/authboss"
 	"net/http"
 )
 

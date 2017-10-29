@@ -15,8 +15,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"gopkg.in/authboss.v1"
-	aboauth "gopkg.in/authboss.v1/oauth2"
+	"github.com/volatiletech/authboss"
+	aboauth "github.com/volatiletech/authboss/oauth2"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -181,6 +181,7 @@ func (app *BeCoupleApp) SetupRouter() {
 
 	// Api Routes
 	apiRouter.HandleFunc("/register", app.APICtrl.register).Methods("POST")
+	apiRouter.HandleFunc("/confirm", app.APICtrl.confirm).Methods("POST")
 	apiRouter.HandleFunc("/auth", app.APICtrl.authenticate).Methods("POST")
 	apiRouter.HandleFunc("/logout", func(writer http.ResponseWriter, r *http.Request) {
 		resp := models.ServerResponse{

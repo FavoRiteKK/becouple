@@ -9,8 +9,9 @@ import (
 	"github.com/dgrijalva/jwt-go/request"
 	"github.com/justinas/nosurf"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/authboss.v1"
+	"github.com/volatiletech/authboss"
 	"regexp"
+	"strings"
 )
 
 type authProtector struct {
@@ -90,7 +91,7 @@ func jwtMiddleware() func(next http.Handler) http.Handler {
 			path := r.URL.Path
 
 			// exempt this exactly path
-			if path == "/api/auth" {
+			if strings.Contains("/api/auth;/api/register;", path) {
 				return true
 			}
 
@@ -153,7 +154,7 @@ func (jwt *JwtAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "the claims should have attribute 'Id' of string", http.StatusInternalServerError)
 	}
 
-	r.Header.Set(authboss.StoreEmail, key)
+	r.Header.Set(appvendor.PropEmail, key)
 
 	// serve next
 	jwt.next.ServeHTTP(w, r)
