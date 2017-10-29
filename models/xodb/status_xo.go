@@ -9,24 +9,32 @@ import (
 )
 
 // Status is the 'status' enum type from schema 'app_mvp_dating'.
-type Status uint16
+type NullStatus struct {
+	Status uint8
+	Valid  bool
+}
 
-const (
+var (
+	StatusNil = NullStatus{0, false}
+
 	// StatusSingle is the 'single' Status.
-	StatusSingle = Status(1)
+	StatusSingle = NullStatus{1, true}
 
 	// StatusDivorce is the 'divorce' Status.
-	StatusDivorce = Status(2)
+	StatusDivorce = NullStatus{2, true}
 
 	// StatusComplicate is the 'complicate' Status.
-	StatusComplicate = Status(3)
+	StatusComplicate = NullStatus{3, true}
 )
 
 // String returns the string value of the Status.
-func (s Status) String() string {
+func (s NullStatus) String() string {
 	var enumVal string
 
 	switch s {
+	case StatusNil:
+		enumVal = "nil"
+
 	case StatusSingle:
 		enumVal = "single"
 
@@ -41,13 +49,16 @@ func (s Status) String() string {
 }
 
 // MarshalText marshals Status into text.
-func (s Status) MarshalText() ([]byte, error) {
+func (s NullStatus) MarshalText() ([]byte, error) {
 	return []byte(s.String()), nil
 }
 
 // UnmarshalText unmarshals Status from text.
-func (s *Status) UnmarshalText(text []byte) error {
+func (s *NullStatus) UnmarshalText(text []byte) error {
 	switch string(text) {
+	case "nil":
+		*s = StatusNil
+
 	case "single":
 		*s = StatusSingle
 
@@ -65,12 +76,19 @@ func (s *Status) UnmarshalText(text []byte) error {
 }
 
 // Value satisfies the sql/driver.Valuer interface for Status.
-func (s Status) Value() (driver.Value, error) {
+func (s NullStatus) Value() (driver.Value, error) {
+	if !s.Valid {
+		return nil, nil
+	}
 	return s.String(), nil
 }
 
 // Scan satisfies the database/sql.Scanner interface for Status.
-func (s *Status) Scan(src interface{}) error {
+func (s *NullStatus) Scan(src interface{}) error {
+	if src == nil {
+		*s = StatusNil
+		return nil
+	}
 	buf, ok := src.([]byte)
 	if !ok {
 		return errors.New("invalid Status")

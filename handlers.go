@@ -254,7 +254,7 @@ func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
 	obj, err := api.app.Storer.Get(key)
 	if err != nil && err != authboss.ErrUserNotFound {
 		// unknown error, prevent further register
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appvendor.InternalServerError(w, err.Error())
 		return
 	} else if obj != nil {
 		// user already exists
@@ -266,13 +266,13 @@ func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
 	// process registration
 	hashedPass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appvendor.InternalServerError(w, err.Error())
 		return
 	}
 
 	attr, err := authboss.AttributesFromRequest(r) // Attributes from overriden forms
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appvendor.InternalServerError(w, err.Error())
 		return
 	}
 
@@ -282,7 +282,7 @@ func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
 
 	// insert user into store
 	if err := api.app.Storer.Create(key, attr); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appvendor.InternalServerError(w, err.Error())
 		return
 	}
 
@@ -290,7 +290,7 @@ func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
 	ctx := api.app.Ab.InitContext(w, r)
 	ctx.User = attr
 	if err := api.app.Ab.Callbacks.FireAfter(authboss.EventRegister, ctx); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appvendor.InternalServerError(w, err.Error())
 		return
 	}
 
@@ -334,7 +334,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := obj.(*xodb.User)
 	if !ok {
-		http.Error(w, "Storer should returns a type AuthUser", http.StatusInternalServerError)
+		appvendor.InternalServerError(w, "Storer should returns a type AuthUser")
 		return
 	}
 
@@ -353,7 +353,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// if user is still being locked
-	if user.Locked.After(time.Now().UTC()) {
+	if user.Locked.Valid && user.Locked.Time.After(time.Now().UTC()) {
 		response.ErrCode = appvendor.ErrorAccountBeingLocked
 		response.Err = "Account is still locked. Try login again later"
 		json.NewEncoder(w).Encode(response)
@@ -372,7 +372,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	tokenString, err := token.SignedString([]byte(appJwtSecret)) // must convert to []byte, otherwise we get error 'key is invalid'
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appvendor.InternalServerError(w, err.Error())
 		return
 	}
 

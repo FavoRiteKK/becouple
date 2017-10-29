@@ -1,5 +1,3 @@
-//+build USE_DB_AUTH_STORER
-
 // Package {{ .Package }} contains the types for schema '{{ schema .Schema }}'.
 package {{ .Package }}
 

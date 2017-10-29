@@ -10,6 +10,8 @@ const (
 	ErrorAccountNotConfirmed = 102017001
 	ErrorAccountBeingLocked  = 102017002
 
+	NilValue = "nil"
+
 	PropPrimaryID    = "primaryID"
 	PropEmail        = authboss.StoreEmail
 	PropPassword     = authboss.StorePassword

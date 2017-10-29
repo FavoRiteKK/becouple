@@ -4,7 +4,13 @@ import (
 	"becouple/models/xodb"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/authboss.v1"
+	"net/http"
 )
+
+func InternalServerError(w http.ResponseWriter, err string) {
+	logrus.WithField("error", err).Errorln("Internal Server Error")
+	http.Error(w, err, http.StatusInternalServerError)
+}
 
 func ConcateErrorWith(errs []error, delim string) string {
 	var s string

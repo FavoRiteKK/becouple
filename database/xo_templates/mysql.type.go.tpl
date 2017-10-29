@@ -24,7 +24,7 @@ func ({{ $short }} *{{ .Name }}) Exists() bool {
 
 // Deleted provides information if the {{ .Name }} has been deleted from the database.
 func ({{ $short }} *{{ .Name }}) IsDeleted() bool {
-	return {{ $short }}.Deleted.Valid && {{ $short }}.Deleted.Bool == true
+	return {{ $short }}.Deleted == true
 }
 
 // Insert inserts the {{ .Name }} to the database.
@@ -94,7 +94,7 @@ func ({{ $short }} *{{ .Name }}) Insert(db XODB) error {
 		}
 
 		// if deleted, bail
-		if {{ $short }}.Deleted.Valid && {{ $short }}.Deleted.Bool == true {
+		if {{ $short }}.Deleted == true {
 			return errors.New("update failed: marked for deletion")
 		}
 
@@ -143,7 +143,7 @@ func ({{ $short }} *{{ .Name }}) Delete(db XODB) error {
 	}
 
 	// if deleted, bail
-	if {{ $short }}.Deleted.Valid && {{ $short }}.Deleted.Bool == true {
+	if {{ $short }}.Deleted == true {
 		return nil
 	}
 
@@ -170,7 +170,7 @@ func ({{ $short }} *{{ .Name }}) Delete(db XODB) error {
 	{{- end }}
 
 	// set deleted
-	{{ $short }}.Deleted = sql.NullBool{Bool: true, Valid: true}
+	{{ $short }}.Deleted = true
 
 	return nil
 }

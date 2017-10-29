@@ -9,24 +9,33 @@ import (
 )
 
 // Gender is the 'gender' enum type from schema 'app_mvp_dating'.
-type Gender uint16
+type NullGender struct {
+	Gender uint8
+	Valid  bool
+}
 
-const (
+var (
+	// Gender is nil
+	GenderNil = NullGender{Gender: 0, Valid: false}
+
 	// GenderX is the 'X' Gender.
-	GenderX = Gender(1)
+	GenderX = NullGender{Gender: 1, Valid: true}
 
 	// GenderM is the 'M' Gender.
-	GenderM = Gender(2)
+	GenderM = NullGender{Gender: 2, Valid: true}
 
 	// GenderF is the 'F' Gender.
-	GenderF = Gender(3)
+	GenderF = NullGender{Gender: 3, Valid: true}
 )
 
 // String returns the string value of the Gender.
-func (g Gender) String() string {
+func (g NullGender) String() string {
 	var enumVal string
 
 	switch g {
+	case GenderNil:
+		enumVal = "nil"
+
 	case GenderX:
 		enumVal = "X"
 
@@ -41,13 +50,16 @@ func (g Gender) String() string {
 }
 
 // MarshalText marshals Gender into text.
-func (g Gender) MarshalText() ([]byte, error) {
+func (g NullGender) MarshalText() ([]byte, error) {
 	return []byte(g.String()), nil
 }
 
 // UnmarshalText unmarshals Gender from text.
-func (g *Gender) UnmarshalText(text []byte) error {
+func (g *NullGender) UnmarshalText(text []byte) error {
 	switch string(text) {
+	case "nil":
+		*g = GenderNil
+
 	case "X":
 		*g = GenderX
 
@@ -65,12 +77,19 @@ func (g *Gender) UnmarshalText(text []byte) error {
 }
 
 // Value satisfies the sql/driver.Valuer interface for Gender.
-func (g Gender) Value() (driver.Value, error) {
+func (g NullGender) Value() (driver.Value, error) {
+	if !g.Valid {
+		return nil, nil
+	}
 	return g.String(), nil
 }
 
 // Scan satisfies the database/sql.Scanner interface for Gender.
-func (g *Gender) Scan(src interface{}) error {
+func (g *NullGender) Scan(src interface{}) error {
+	if src == nil {
+		*g = GenderNil
+		return nil
+	}
 	buf, ok := src.([]byte)
 	if !ok {
 		return errors.New("invalid Gender")
