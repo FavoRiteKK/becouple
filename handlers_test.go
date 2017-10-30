@@ -137,7 +137,7 @@ func TestApiConfirmUser(t *testing.T) {
 
 	// process confirm function test
 	vals = url.Values{}
-	vals.Set(appvendor.PropConfirmToken, "ynwann")
+	vals.Set(appvendor.PropConfirmToken, "")
 
 	w = httptest.NewRecorder()
 	r, _ = http.NewRequest("POST", "/api/confirm", bytes.NewBufferString(vals.Encode()))
@@ -145,6 +145,7 @@ func TestApiConfirmUser(t *testing.T) {
 	r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", result.Jwt))
 
 	h.ServeHTTP(w, r)
+	t.Logf("%v %v", w.Code, w.Body.String())
 
 	// test result
 	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
@@ -152,7 +153,7 @@ func TestApiConfirmUser(t *testing.T) {
 	}
 
 	if result.Success != true {
-		t.Error("Confirm function seems malfunctioned")
+		t.Error("Confirm function seems malfunctioned.")
 	}
 }
 

@@ -16,5 +16,5 @@ const (
 	PropPassword     = authboss.StorePassword
 	PropFullName     = "fullname"
 	PropConfirmToken = confirm.StoreConfirmToken
-	PropConfirmed = confirm.StoreConfirmed
+	PropConfirmed    = confirm.StoreConfirmed
 )

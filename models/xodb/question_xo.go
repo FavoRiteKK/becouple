@@ -9,9 +9,9 @@ import (
 
 // Question represents a row from 'app_mvp_dating.question'.
 type Question struct {
-	QuestionID uint         `json:"question_id"` // question_id
-	Content    string       `json:"content"`     // content
-	Deleted    bool `json:"deleted"`     // deleted
+	QuestionID uint   `json:"question_id"` // question_id
+	Content    string `json:"content"`     // content
+	Deleted    bool   `json:"deleted"`     // deleted
 
 	// xo fields
 	_exists bool
