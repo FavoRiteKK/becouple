@@ -17,4 +17,5 @@ const (
 	PropFullName     = "fullname"
 	PropConfirmToken = confirm.StoreConfirmToken
 	PropConfirmed    = confirm.StoreConfirmed
+	PropJwtError     = "error"
 )

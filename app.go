@@ -214,6 +214,7 @@ func (app *BeCoupleApp) SetupMiddleware() http.Handler {
 	stack := alice.New(logger,
 		nosurfing("/api/"),
 		jwtMiddleware(),
+		confirmingMiddleware(),
 		app.Ab.ExpireMiddleware).Then(app.Router)
 	return stack
 }

@@ -137,7 +137,7 @@ func TestApiConfirmUser(t *testing.T) {
 
 	// process confirm function test
 	vals = url.Values{}
-	vals.Set(appvendor.PropConfirmToken, "")
+	vals.Set(appvendor.PropConfirmToken, "asdzxc")
 
 	w = httptest.NewRecorder()
 	r, _ = http.NewRequest("POST", "/api/confirm", bytes.NewBufferString(vals.Encode()))
@@ -145,7 +145,7 @@ func TestApiConfirmUser(t *testing.T) {
 	r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", result.Jwt))
 
 	h.ServeHTTP(w, r)
-	t.Logf("%v %v", w.Code, w.Body.String())
+	t.Logf("/confirm response: %v %v", w.Code, w.Body.String())
 
 	// test result
 	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
@@ -240,14 +240,15 @@ func TestApiLogout(t *testing.T) {
 	vals := url.Values{}
 
 	// login user first
-	email := "zeratul@heroes.com"
+	email := "qwe@gmail.com"
 	vals.Set(appvendor.PropPrimaryID, email)
-	vals.Set(appvendor.PropPassword, "1234")
+	vals.Set(appvendor.PropPassword, "qwe123")
 
 	r, _ := http.NewRequest("POST", "/api/auth", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	h.ServeHTTP(w, r)
+	t.Logf("/auth response: %v, %v", w.Code, w.Body.String())
 
 	// to retrieve jwt token
 	result := new(models.AuthResponse)
@@ -266,6 +267,7 @@ func TestApiLogout(t *testing.T) {
 	r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", result.Jwt))
 
 	h.ServeHTTP(w, r)
+	t.Logf("/logout response: %v, %v", w.Code, w.Body.String())
 
 	// test result
 	if err := json.NewDecoder(w.Body).Decode(result); err != nil {

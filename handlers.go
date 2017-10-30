@@ -425,13 +425,27 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// if user is still being locked
+	if user.Locked.Valid && user.Locked.Time.After(time.Now().UTC()) {
+		response.ErrCode = appvendor.ErrorAccountBeingLocked
+		response.Err = "Account is still locked. Try login again later"
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain.
-	token := jwtPkg.NewWithClaims(appJwtSigningMethod, jwtPkg.MapClaims{
+	mcl := jwtPkg.MapClaims{
 		"Id":  key,
 		"exp": time.Now().Add(time.Minute * 10).Unix(),
 		//TODO [production] may change these when go live
-	})
+	}
+
+	if user.Confirmed == false {
+		mcl[appvendor.PropJwtError] = appvendor.ErrorAccountNotConfirmed
+	}
+
+	token := jwtPkg.NewWithClaims(appJwtSigningMethod, mcl)
 
 	// Sign and get the complete encoded token as a string using the secret
 	tokenString, err := token.SignedString([]byte(appJwtSecret)) // must convert to []byte, otherwise we get error 'key is invalid'
@@ -447,14 +461,6 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	if user.Confirmed == false {
 		response.ErrCode = appvendor.ErrorAccountNotConfirmed
 		response.Err = "Account not confirmed"
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	// if user is still being locked
-	if user.Locked.Valid && user.Locked.Time.After(time.Now().UTC()) {
-		response.ErrCode = appvendor.ErrorAccountBeingLocked
-		response.Err = "Account is still locked. Try login again later"
 		json.NewEncoder(w).Encode(response)
 		return
 	}
