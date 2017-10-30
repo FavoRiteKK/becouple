@@ -41,7 +41,6 @@ type User struct {
 	RecoverToken       string         `json:"recover_token"`        // recover_token
 	RecoverTokenExpiry mysql.NullTime `json:"recover_token_expiry"` // recover_token_expiry
 	Deleted            bool           `json:"deleted"`              // deleted
-	//todo provide `update_time` field
 	// xo fields
 	_exists bool
 }

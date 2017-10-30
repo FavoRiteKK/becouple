@@ -202,6 +202,8 @@ func (app *BeCoupleApp) SetupRouter() {
 		json.NewEncoder(writer).Encode(resp)
 	}).Methods("POST")
 
+	//TODO /api/refresh_token
+
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		io.WriteString(w, "No such resource exists")
