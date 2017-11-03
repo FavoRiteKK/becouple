@@ -209,11 +209,9 @@ func (cnf *ConfirmingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// default response to error
-	response := models.AuthResponse{
-		ServerResponse: &models.ServerResponse{
-			Success: false,
-			ErrCode: appvendor.ErrorGeneral,
-		},
+	response := models.ServerResponse{
+		Success: false,
+		ErrCode: appvendor.ErrorGeneral,
 	}
 
 	// if previous middleware (jwt) has error 'account not confirmed', reject further request

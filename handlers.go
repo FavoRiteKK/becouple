@@ -321,15 +321,13 @@ func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// route '/api/confirm'
+// route '/api/confirm' params: 'Header JWT', 'confirm_token'
 func (api *APIController) confirm(w http.ResponseWriter, r *http.Request) {
 
 	// default response to error
-	response := models.AuthResponse{
-		ServerResponse: &models.ServerResponse{
-			Success: false,
-			ErrCode: appvendor.ErrorGeneral,
-		},
+	response := models.ServerResponse{
+		Success: false,
+		ErrCode: appvendor.ErrorGeneral,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -382,15 +380,14 @@ func (api *APIController) confirm(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// route '/api/auth'
+// route '/api/auth' params 'primaryID', 'password'
 func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 
 	// default response to error
-	response := models.AuthResponse{
-		ServerResponse: &models.ServerResponse{
-			Success: false,
-			ErrCode: appvendor.ErrorGeneral,
-		},
+	response := models.ServerResponse{
+		Success: false,
+		ErrCode: appvendor.ErrorGeneral,
+		Data:    make(models.Data),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -455,7 +452,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.Jwt = tokenString
+	response.Data[appvendor.JFieldToken] = tokenString
 
 	// if user is not confirmed
 	if user.Confirmed == false {

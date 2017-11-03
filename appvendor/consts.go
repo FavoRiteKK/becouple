@@ -18,4 +18,6 @@ const (
 	PropConfirmToken = confirm.StoreConfirmToken
 	PropConfirmed    = confirm.StoreConfirmed
 	PropJwtError     = "error"
+
+	JFieldToken = "token"
 )

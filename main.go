@@ -31,7 +31,7 @@ func main() {
 	if len(port) == 0 {
 		port = "8000"
 	}
-	addr := "localhost:" + port
+	addr := "172.16.13.124:" + port
 
 	// setup our app
 	app := NewApp("http://" + addr)

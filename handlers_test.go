@@ -126,14 +126,14 @@ func TestApiConfirmUser(t *testing.T) {
 	h.ServeHTTP(w, r)
 
 	// to retrieve jwt token
-	result := new(models.AuthResponse)
+	result := new(models.ServerResponse)
 	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
 		t.Error("It should response with proper type AuthResponse, compare above")
 	}
 
-	if result.Jwt == "" {
-		t.Error("It should return jwt token, but got ", result.Err)
-	}
+	//if result.Data == "" {
+	//	t.Error("It should return jwt token, but got ", result.Err)
+	//}
 
 	// process confirm function test
 	vals = url.Values{}
@@ -142,7 +142,7 @@ func TestApiConfirmUser(t *testing.T) {
 	w = httptest.NewRecorder()
 	r, _ = http.NewRequest("POST", "/api/confirm", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", result.Jwt))
+	//r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", result.Jwt))
 
 	h.ServeHTTP(w, r)
 	t.Logf("/confirm response: %v %v", w.Code, w.Body.String())
@@ -181,17 +181,17 @@ func TestApiAuthenticateWrong(t *testing.T) {
 		t.Error("It should be http 200:", w.Code)
 	}
 
-	if result.Success == true {
-		t.Error("It should be failed (the password parameter is wrong):", result.Success)
-	}
+	//if result.Success == true {
+	//	t.Error("It should be failed (the password parameter is wrong):", result.Success)
+	//}
 
 	if result.Jwt != "" {
 		t.Error("It should be empty jwt:", result.Jwt)
 	}
 
-	if result.Err != bcrypt.ErrMismatchedHashAndPassword.Error() {
-		t.Error("It encodes wrong error:", result.Err)
-	}
+	//if result.Err != bcrypt.ErrMismatchedHashAndPassword.Error() {
+	//	t.Error("It encodes wrong error:", result.Err)
+	//}
 
 }
 
@@ -203,14 +203,15 @@ func TestApiAuthenticateSuccess(t *testing.T) {
 
 	email := "qwe@gmail.com"
 	vals.Set(appvendor.PropPrimaryID, email)
-	vals.Set(appvendor.PropPassword, "qwe123") // wrong password
+	vals.Set(appvendor.PropPassword, "qwe123")
 
 	r, _ := http.NewRequest("POST", "/api/auth", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	h.ServeHTTP(w, r)
+	t.Logf("/auth response: %v, %v", w.Code, w.Body.String())
 
-	result := new(models.AuthResponse)
+	result := new(models.ServerResponse)
 	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
 		t.Error("It should response with proper type AuthResponse.")
 	}
@@ -219,16 +220,8 @@ func TestApiAuthenticateSuccess(t *testing.T) {
 		t.Error("It should be http 200:", w.Code)
 	}
 
-	if result.Success == true {
-		t.Error("It should be failed (the password parameter is wrong):", result.Success)
-	}
-
-	if result.Jwt != "" {
-		t.Error("It should be empty jwt:", result.Jwt)
-	}
-
-	if result.Err != bcrypt.ErrMismatchedHashAndPassword.Error() {
-		t.Error("It encodes wrong error:", result.Err)
+	if result.Data[appvendor.JFieldToken] == "" {
+		t.Error("error: token field is empty, expect JWT token")
 	}
 
 }
@@ -256,9 +249,9 @@ func TestApiLogout(t *testing.T) {
 		t.Error("It should response with proper type AuthResponse, compare above")
 	}
 
-	if result.Jwt == "" {
-		t.Error("It should return jwt token, but got ", result.Err)
-	}
+	//if result.Jwt == "" {
+	//t.Error("It should return jwt token, but got ", result.Err)
+	//}
 
 	// process logout function test
 	w = httptest.NewRecorder()
@@ -274,7 +267,7 @@ func TestApiLogout(t *testing.T) {
 		t.Error("Body response is malformed, compare above.")
 	}
 
-	if result.Success != true {
-		t.Error("Logout function seems malfunctioned")
-	}
+	//if result.Success != true {
+	//	t.Error("Logout function seems malfunctioned")
+	//}
 }
