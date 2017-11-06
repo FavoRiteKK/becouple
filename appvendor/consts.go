@@ -10,6 +10,7 @@ const (
 	ErrorAccountNotConfirmed  = 102017001
 	ErrorAccountBeingLocked   = 102017002
 	ErrorAccountCannotConfirm = 102017003
+	ErrorAccountAlreadyInUsed = 102017004
 
 	PropPrimaryID    = "primaryID"
 	PropEmail        = authboss.StoreEmail

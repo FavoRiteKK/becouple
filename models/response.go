@@ -6,7 +6,7 @@ type Data map[string]interface{}
 
 type ServerResponse struct {
 	Success bool                   `json:"success"`
-	Data    map[string]interface{} `json:"data"`
+	Data    map[string]interface{} `json:"data,omitempty"`
 	Err     string                 `json:"error,omitempty"`
 	ErrCode int                    `json:"ecode,omitempty"`
 }

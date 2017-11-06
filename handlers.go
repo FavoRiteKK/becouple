@@ -196,7 +196,7 @@ func NewAPIController(app *BeCoupleApp) *APIController {
 	api.validator["/auth"] = func(r *http.Request) []error {
 		var errs []error
 
-		key := r.FormValue(appvendor.PropPrimaryID)
+		key := strings.TrimSpace(r.FormValue(appvendor.PropPrimaryID))
 		password := r.FormValue(appvendor.PropPassword)
 
 		if err := delegate.Var(key, "email"); err != nil {
@@ -216,7 +216,7 @@ func NewAPIController(app *BeCoupleApp) *APIController {
 	api.validator["/register"] = func(r *http.Request) []error {
 		errs := api.validator["/auth"](r)
 
-		fullname := r.FormValue(appvendor.PropFullName)
+		fullname := strings.TrimSpace(r.FormValue(appvendor.PropFullName))
 
 		if err := delegate.Var(fullname, "min=1,max=45"); err != nil {
 			logrus.WithError(err).Errorln("validate full name")
@@ -229,7 +229,8 @@ func NewAPIController(app *BeCoupleApp) *APIController {
 	api.validator["/confirm"] = func(r *http.Request) []error {
 		var errs []error
 
-		email := r.Header.Get(appvendor.PropEmail)
+		email := strings.TrimSpace(r.Header.Get(appvendor.PropEmail))
+
 		if err := delegate.Var(email, "email"); err != nil {
 			logrus.WithError(err).Errorln("validate email")
 			errs = append(errs, err)
