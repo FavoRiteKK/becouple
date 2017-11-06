@@ -280,6 +280,7 @@ func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
 	} else if obj != nil {
 		// user already exists
 		response.Err = authboss.ErrUserFound.Error()
+		response.ErrCode = appvendor.ErrorAccountAlreadyInUsed
 		json.NewEncoder(w).Encode(response)
 		return
 	}
