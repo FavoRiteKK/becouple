@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	jwtPkg "github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
+	"github.com/gorilla/mux"
 	"github.com/justinas/nosurf"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/authboss"
@@ -97,6 +98,19 @@ func logger(next http.Handler) http.Handler {
 		rec.Body.WriteTo(w)
 
 	})
+}
+
+// detect no such resource exists
+func noresourceMiddleware(router *mux.Router) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		cnf := NewNoResourceHandler()
+		cnf.next = next
+		cnf.router = router
+
+		// if this middleware is used, then router's notfoundhandler must be nil
+		router.NotFoundHandler = nil
+		return cnf
+	}
 }
 
 func jwtMiddleware() func(next http.Handler) http.Handler {
@@ -247,4 +261,27 @@ func (cnf *ConfirmingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 }
 
 //////////////////////////////////////////////////
+// No resource middleware
 //////////////////////////////////////////////////
+
+type NoResourceHandler struct {
+	next http.Handler
+	// method to parse request, return true if request should be skipped for jwt token validation
+	router *mux.Router
+}
+
+func NewNoResourceHandler() *NoResourceHandler {
+	return &NoResourceHandler{}
+}
+
+func (nores *NoResourceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var match mux.RouteMatch
+
+	if nores.router.Match(r, &match) == false {
+		http.NotFoundHandler().ServeHTTP(w, r)
+		return
+	}
+
+	// serve next
+	nores.next.ServeHTTP(w, r)
+}

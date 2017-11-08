@@ -214,6 +214,7 @@ func (app *BeCoupleApp) SetupMiddleware() http.Handler {
 	// Set up our middleware chain
 	// also, remove csrf validator for any route path that contains /api/
 	stack := alice.New(logger,
+		noresourceMiddleware(app.Router),
 		nosurfing("/api/"),
 		jwtMiddleware(),
 		confirmingMiddleware(),
