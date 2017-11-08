@@ -12,6 +12,7 @@ import (
 	"github.com/justinas/nosurf"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/authboss"
+	"net/http/httptest"
 	"regexp"
 	"strings"
 )
@@ -54,7 +55,7 @@ func nosurfing(exemptedRegex interface{}) func(h http.Handler) http.Handler {
 	}
 }
 
-func logger(h http.Handler) http.Handler {
+func logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("\n%s %s %s\n", r.Method, r.URL.Path, r.Proto)
 		session, err := appvendor.SessionStore.Get(r, appvendor.SessionCookieName)
@@ -75,7 +76,26 @@ func logger(h http.Handler) http.Handler {
 		//for _, u := range database.Users {
 		//	fmt.Printf("%#v\n", u)
 		//}
-		h.ServeHTTP(w, r)
+
+		// switch out response writer for a recorder
+		// for all subsequent handlers
+		rec := httptest.NewRecorder()
+		next.ServeHTTP(rec, r)
+
+		// log result, after request went through middleware chains
+		logrus.WithFields(logrus.Fields{
+			"code": rec.Code,
+			"body": rec.Body.String(),
+		}).Infoln("Http response")
+
+		// copy everything from response recorder
+		// to actual response writer
+		for k, v := range rec.HeaderMap {
+			w.Header()[k] = v
+		}
+		w.WriteHeader(rec.Code)
+		rec.Body.WriteTo(w)
+
 	})
 }
 
