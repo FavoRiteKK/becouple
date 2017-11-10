@@ -10,6 +10,9 @@ A MVP project developed with Go. The purpose is to enhance my CV
 
 ### api specification ###
 
+## Middleware
+# Error token is expired
+
 ## register : /api/register
 # request
 - primaryID (represent unique identifier, such as email)
@@ -29,6 +32,7 @@ A MVP project developed with Go. The purpose is to enhance my CV
 - on success, return normal response
 
    After this step, the user can login their account
+- on error, return [ General, Cannot confirm user ]
 
 ## authenticate : /api/auth
 # request

@@ -191,7 +191,16 @@ func (jwt *JwtAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return b, nil
 	})
 
-	if err != nil {
+	if vErr, ok := err.(*jwtPkg.ValidationError); ok {
+		if vErr.Errors&jwtPkg.ValidationErrorExpired != 0 {
+			json.NewEncoder(w).Encode(models.ServerResponse{
+				Success: false,
+				ErrCode: appvendor.ErrorTokenExpired,
+				Err:     err.Error(),
+			})
+			return
+		}
+	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}

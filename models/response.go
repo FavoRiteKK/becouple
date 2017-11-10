@@ -6,11 +6,11 @@ type Data map[string]interface{}
 
 type ServerResponse struct {
 	Success bool                   `json:"success"`
-	Data    map[string]interface{} `json:"data,omitempty"`
-	Err     string                 `json:"error,omitempty"`
-	ErrCode int                    `json:"ecode,omitempty"`
+	Data    map[string]interface{} `json:"data"`
+	Err     string                 `json:"error"`
+	ErrCode uint                   `json:"ecode"`
 }
 
 type AuthResponse struct {
-	Jwt string `json:"token,omitempty"`
+	Jwt string `json:"token"`
 }

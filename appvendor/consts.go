@@ -6,11 +6,15 @@ import (
 )
 
 const (
-	ErrorGeneral              = 102017000
-	ErrorAccountNotConfirmed  = 102017001
-	ErrorAccountBeingLocked   = 102017002
-	ErrorAccountCannotConfirm = 102017003
-	ErrorAccountAlreadyInUsed = 102017004
+	ErrorGeneral uint = 102017000 + iota
+	ErrorAccountNotConfirmed
+	ErrorAccountBeingLocked
+	ErrorAccountCannotConfirm
+	ErrorAccountAlreadyInUsed
+
+	ErrorTokenExpired
+	ErrorTokenIssuedAt
+	ErrorTokenNotValidYet
 
 	PropPrimaryID    = "primaryID"
 	PropEmail        = authboss.StoreEmail
