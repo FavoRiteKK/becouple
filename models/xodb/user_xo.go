@@ -6,6 +6,7 @@ package xodb
 import (
 	"errors"
 
+	"database/sql"
 	"github.com/go-sql-driver/mysql"
 )
 
@@ -17,7 +18,7 @@ type User struct {
 	Fullname           string         `json:"fullname"`             // fullname
 	Nickname           string         `json:"nickname"`             // nickname
 	AvatarURI          string         `json:"avatar_uri"`           // avatar_uri
-	PhoneNumber        string         `json:"phone_number"`         // phone_number
+	PhoneNumber        sql.NullString `json:"phone_number"`         // phone_number
 	Gender             NullGender     `json:"gender"`               // gender
 	DateOfBirth        mysql.NullTime `json:"date_of_birth"`        // date_of_birth
 	Job                string         `json:"job"`                  // job
