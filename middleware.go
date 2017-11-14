@@ -146,25 +146,6 @@ func jwtMiddleware() func(next http.Handler) http.Handler {
 	}
 }
 
-func confirmingMiddleware() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		cnf := NewConfirmingHandler()
-		cnf.next = next
-
-		cnf.except = func(r *http.Request) bool {
-			path := r.URL.Path
-
-			// exempt this exactly path
-			if strings.Contains("/api/confirm", path) {
-				return true
-			}
-
-			return false
-		}
-		return cnf
-	}
-}
-
 //////////////////////////////////////////////////
 // jwtAuth middleware
 //////////////////////////////////////////////////
@@ -234,46 +215,6 @@ func (jwt *JwtAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// serve next
 	jwt.next.ServeHTTP(w, r)
-}
-
-//////////////////////////////////////////////////
-// confirmation middleware
-//////////////////////////////////////////////////
-
-type ConfirmingHandler struct {
-	next http.Handler
-	// method to parse request, return true if request should be skipped for jwt token validation
-	except func(r *http.Request) bool
-}
-
-func NewConfirmingHandler() *ConfirmingHandler {
-	return &ConfirmingHandler{}
-}
-
-func (cnf *ConfirmingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-	// if except function return true for the request, then skip check jwt token
-	if cnf.except(r) {
-		cnf.next.ServeHTTP(w, r)
-		return
-	}
-
-	// default response to error
-	response := models.ServerResponse{
-		Success: false,
-		ErrCode: appvendor.ErrorGeneral,
-	}
-
-	// if previous middleware (jwt) has error 'account not confirmed', reject further request
-	if r.Header.Get(appvendor.PropJwtError) == string(appvendor.ErrorAccountNotConfirmed) {
-		response.ErrCode = appvendor.ErrorAccountNotConfirmed
-		response.Err = "Account not confirmed"
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	// serve next
-	cnf.next.ServeHTTP(w, r)
 }
 
 //////////////////////////////////////////////////

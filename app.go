@@ -204,7 +204,6 @@ func (app *BeCoupleApp) SetupMiddleware() http.Handler {
 		noresourceMiddleware(app.Router),
 		nosurfing("/api/"),
 		jwtMiddleware(),
-		confirmingMiddleware(),
 		app.Ab.ExpireMiddleware).Then(app.Router)
 
 	// TODO [PRODUCTION] remove yaag
