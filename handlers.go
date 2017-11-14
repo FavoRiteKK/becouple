@@ -227,14 +227,7 @@ func NewAPIController(app *BeCoupleApp) *APIController {
 	}
 
 	api.validator["/confirm"] = func(r *http.Request) []error {
-		var errs []error
-
-		email := strings.TrimSpace(r.Header.Get(appvendor.PropEmail))
-
-		if err := delegate.Var(email, "email"); err != nil {
-			logrus.WithError(err).Errorln("validate email")
-			errs = append(errs, err)
-		}
+		errs := api.validator["/auth"](r)
 
 		cnfToken := r.FormValue(appvendor.PropConfirmToken)
 
@@ -323,7 +316,7 @@ func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// route '/api/confirm' params: 'Header JWT', 'confirm_token'
+// route '/api/confirm' params: 'email', 'password', 'confirm_token'
 func (api *APIController) confirm(w http.ResponseWriter, r *http.Request) {
 
 	// default response to error
@@ -341,11 +334,12 @@ func (api *APIController) confirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	email := r.Header.Get(appvendor.PropEmail)
+	key := r.FormValue(appvendor.PropPrimaryID)
+	password := r.FormValue(appvendor.PropPassword)
 	cnfToken := r.FormValue(appvendor.PropConfirmToken)
 
 	// get user from storer and check if exists
-	obj, err := api.app.Storer.Get(email)
+	obj, err := api.app.Storer.Get(key)
 	if err != nil {
 		response.Err = err.Error()
 		json.NewEncoder(w).Encode(response)
@@ -355,6 +349,13 @@ func (api *APIController) confirm(w http.ResponseWriter, r *http.Request) {
 	user, ok := obj.(*xodb.User)
 	if !ok {
 		appvendor.InternalServerError(w, "Storer should returns a type AuthUser")
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		response.ErrCode = appvendor.ErrorAccountAuthorizedFailed
+		response.Err = err.Error()
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
@@ -371,7 +372,7 @@ func (api *APIController) confirm(w http.ResponseWriter, r *http.Request) {
 	attr[appvendor.PropConfirmToken] = ""
 	attr[appvendor.PropConfirmed] = true
 
-	if err := api.app.Storer.Put(email, attr); err != nil {
+	if err := api.app.Storer.Put(key, attr); err != nil {
 		appvendor.InternalServerError(w, "Cannot update attributes of confirmed user")
 		return
 	}
@@ -419,6 +420,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		response.ErrCode = appvendor.ErrorAccountAuthorizedFailed
 		response.Err = err.Error()
 		json.NewEncoder(w).Encode(response)
 		return
@@ -468,4 +470,24 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	response.ErrCode = 0
 
 	json.NewEncoder(w).Encode(response)
+}
+
+// route '/api/logout'
+func (api *APIController) logout(w http.ResponseWriter, r *http.Request) {
+	resp := models.ServerResponse{
+		Success: true,
+	}
+
+	// if request is malformed
+	if key := r.Header.Get(authboss.StoreEmail); key == "" {
+		resp.Success = false
+		resp.ErrCode = appvendor.ErrorGeneral
+		resp.Err = "Request not contain proper key (extracted from jwt middleware."
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	// request is fine
+	json.NewEncoder(w).Encode(resp)
 }

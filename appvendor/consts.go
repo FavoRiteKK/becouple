@@ -11,6 +11,7 @@ const (
 	ErrorAccountBeingLocked
 	ErrorAccountCannotConfirm
 	ErrorAccountAlreadyInUsed
+	ErrorAccountAuthorizedFailed
 
 	ErrorTokenExpired
 	ErrorTokenIssuedAt

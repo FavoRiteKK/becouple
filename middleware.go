@@ -39,6 +39,15 @@ func (ap authProtector) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// this wrapper wraps given handler f, changes f's response header
+func WrapApiResponseHeader(f http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header() = http.Header{}
+		w.Header().Set("Content-Type", "application/json")
+		f.ServeHTTP(w, r)
+	}
+}
+
 func nosurfing(exemptedRegex interface{}) func(h http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		surfing := nosurf.New(h)
@@ -217,8 +226,6 @@ func (jwt *JwtAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else if key == "" {
 		appvendor.InternalServerError(w, "the claims should have attribute 'Id' of string")
 	}
-
-	r.Header.Set(appvendor.PropEmail, key)
 
 	// check if token has error 'account not confirmed'
 	if _, ok := claims[appvendor.PropJwtError]; ok {

@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/volatiletech/authboss"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
@@ -61,7 +60,7 @@ func TestApiRegisterNew(t *testing.T) {
 
 	// test data: new account
 	email := "qwe@gmail.com"
-	pass := "qwe123"
+	pass := "qweasd"
 	fullName := "test master"
 	vals.Set(appvendor.PropPrimaryID, email)
 	vals.Set(appvendor.PropPassword, pass)
@@ -81,7 +80,7 @@ func TestApiRegisterNew(t *testing.T) {
 	}
 
 	obj, _ := app.Storer.Get(email)
-	spew.Dump(obj)
+	// spew.Dump(obj)
 
 	user, _ := obj.(*xodb.User)
 	if user == nil {

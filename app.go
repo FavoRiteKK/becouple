@@ -2,10 +2,10 @@ package main
 
 import (
 	"becouple/appvendor"
-	"becouple/models"
 	"becouple/models/xodb"
 	"encoding/base64"
-	"encoding/json"
+	"github.com/betacraft/yaag/middleware"
+	"github.com/betacraft/yaag/yaag"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
@@ -180,27 +180,14 @@ func (app *BeCoupleApp) SetupRouter() {
 	}).Methods("GET")
 
 	// Api Routes
-	apiRouter.HandleFunc("/register", app.APICtrl.register).Methods("POST")
-	apiRouter.HandleFunc("/confirm", app.APICtrl.confirm).Methods("POST")
-	apiRouter.HandleFunc("/auth", app.APICtrl.authenticate).Methods("POST")
-	apiRouter.HandleFunc("/logout", func(writer http.ResponseWriter, r *http.Request) {
-		resp := models.ServerResponse{
-			Success: true,
-		}
-
-		// if request is malformed
-		if key := r.Header.Get(authboss.StoreEmail); key == "" {
-			resp.Success = false
-			resp.ErrCode = appvendor.ErrorGeneral
-			resp.Err = "Request not contain proper key (extracted from jwt middleware."
-
-			json.NewEncoder(writer).Encode(resp)
-			return
-		}
-
-		// request is fine
-		json.NewEncoder(writer).Encode(resp)
-	}).Methods("POST")
+	apiRouter.HandleFunc("/register",
+		WrapApiResponseHeader(app.APICtrl.register)).Methods("POST")
+	apiRouter.HandleFunc("/confirm",
+		WrapApiResponseHeader(app.APICtrl.confirm)).Methods("POST")
+	apiRouter.HandleFunc("/auth",
+		WrapApiResponseHeader(app.APICtrl.authenticate)).Methods("POST")
+	apiRouter.HandleFunc("/logout",
+		WrapApiResponseHeader(app.APICtrl.logout)).Methods("POST")
 
 	//TODO /api/refresh_token
 
@@ -219,7 +206,10 @@ func (app *BeCoupleApp) SetupMiddleware() http.Handler {
 		jwtMiddleware(),
 		confirmingMiddleware(),
 		app.Ab.ExpireMiddleware).Then(app.Router)
-	return stack
+
+	// TODO [PRODUCTION] remove yaag
+	yaag.Init(&yaag.Config{On: true, DocTitle: "Gorilla Mux", DocPath: "doc/apidoc.html"})
+	return middleware.Handle(stack)
 }
 
 func (app *BeCoupleApp) SetupClientStore() {
