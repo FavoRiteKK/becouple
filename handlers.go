@@ -323,6 +323,7 @@ func (api *APIController) confirm(w http.ResponseWriter, r *http.Request) {
 	response := models.ServerResponse{
 		Success: false,
 		ErrCode: appvendor.ErrorGeneral,
+		Data:    make(models.Data),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -362,7 +363,7 @@ func (api *APIController) confirm(w http.ResponseWriter, r *http.Request) {
 	// compare confirm token
 	if user.Confirmed == true || user.ConfirmToken != strings.ToUpper(cnfToken) {
 		response.ErrCode = appvendor.ErrorAccountCannotConfirm
-		response.Err = "Cannot confirm the issuer"
+		response.Err = "Cannot confirm the issuer or wrong confirm token"
 		json.NewEncoder(w).Encode(response)
 		return
 	}
@@ -377,6 +378,25 @@ func (api *APIController) confirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create a new token object, specifying signing method and the claims
+	// you would like it to contain.
+	mcl := jwtPkg.MapClaims{
+		"Id":  key,
+		"exp": time.Now().Add(time.Minute * 10).Unix(),
+		//TODO [production] may change these when go live
+	}
+
+	token := jwtPkg.NewWithClaims(appJwtSigningMethod, mcl)
+
+	// Sign and get the complete encoded token as a string using the secret
+	tokenString, err := token.SignedString([]byte(appJwtSecret)) // must convert to []byte, otherwise we get error 'key is invalid'
+
+	if err != nil {
+		appvendor.InternalServerError(w, err.Error())
+		return
+	}
+
+	response.Data[appvendor.JFieldToken] = tokenString
 	response.Success = true
 	response.ErrCode = 0
 
@@ -434,16 +454,20 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// if user is not confirmed
+	if user.Confirmed == false {
+		response.ErrCode = appvendor.ErrorAccountNotConfirmed
+		response.Err = "Account not confirmed"
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain.
 	mcl := jwtPkg.MapClaims{
 		"Id":  key,
 		"exp": time.Now().Add(time.Minute * 10).Unix(),
 		//TODO [production] may change these when go live
-	}
-
-	if user.Confirmed == false {
-		mcl[appvendor.PropJwtError] = appvendor.ErrorAccountNotConfirmed
 	}
 
 	token := jwtPkg.NewWithClaims(appJwtSigningMethod, mcl)
@@ -457,15 +481,6 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Data[appvendor.JFieldToken] = tokenString
-
-	// if user is not confirmed
-	if user.Confirmed == false {
-		response.ErrCode = appvendor.ErrorAccountNotConfirmed
-		response.Err = "Account not confirmed"
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
 	response.Success = true
 	response.ErrCode = 0
 
@@ -479,7 +494,7 @@ func (api *APIController) logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// if request is malformed
-	if key := r.Header.Get(authboss.StoreEmail); key == "" {
+	if key := r.Header.Get(appvendor.PropEmail); key == "" {
 		resp.Success = false
 		resp.ErrCode = appvendor.ErrorGeneral
 		resp.Err = "Request not contain proper key (extracted from jwt middleware."

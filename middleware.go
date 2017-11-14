@@ -42,7 +42,8 @@ func (ap authProtector) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // this wrapper wraps given handler f, changes f's response header
 func WrapApiResponseHeader(f http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header() = http.Header{}
+		w.Header().Del("Set-Cookie")
+		w.Header().Del("Vary")
 		w.Header().Set("Content-Type", "application/json")
 		f.ServeHTTP(w, r)
 	}
@@ -136,7 +137,7 @@ func jwtMiddleware() func(next http.Handler) http.Handler {
 			path := r.URL.Path
 
 			// exempt this exactly path
-			if strings.Contains("/api/auth;/api/register;", path) {
+			if strings.Contains("/api/auth;/api/register;/api/confirm", path) {
 				return true
 			}
 

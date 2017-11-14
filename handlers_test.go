@@ -115,9 +115,8 @@ func TestApiConfirmUser(t *testing.T) {
 	vals := url.Values{}
 
 	// login user first
-	email := "qwe@gmail.com"
-	vals.Set(appvendor.PropPrimaryID, email)
-	vals.Set(appvendor.PropPassword, "qwe123")
+	vals.Set(appvendor.PropPrimaryID, "qwe@gmail.com")
+	vals.Set(appvendor.PropPassword, "qweasd")
 
 	r, _ := http.NewRequest("POST", "/api/auth", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -136,7 +135,9 @@ func TestApiConfirmUser(t *testing.T) {
 
 	// process confirm function test
 	vals = url.Values{}
-	vals.Set(appvendor.PropConfirmToken, "asdzxc")
+	vals.Set(appvendor.PropPrimaryID, "qwe@gmail.com")
+	vals.Set(appvendor.PropPassword, "qweasd")
+	vals.Set(appvendor.PropConfirmToken, "DVSLCP")
 
 	w = httptest.NewRecorder()
 	r, _ = http.NewRequest("POST", "/api/confirm", bytes.NewBufferString(vals.Encode()))
@@ -200,9 +201,8 @@ func TestApiAuthenticateSuccess(t *testing.T) {
 	w := httptest.NewRecorder()
 	vals := url.Values{}
 
-	email := "qwe@gmail.com"
-	vals.Set(appvendor.PropPrimaryID, email)
-	vals.Set(appvendor.PropPassword, "qwe123")
+	vals.Set(appvendor.PropPrimaryID, "qwe@gmail.com")
+	vals.Set(appvendor.PropPassword, "qweasd")
 
 	r, _ := http.NewRequest("POST", "/api/auth", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -219,7 +219,12 @@ func TestApiAuthenticateSuccess(t *testing.T) {
 		t.Error("It should be http 200:", w.Code)
 	}
 
-	if result.Data[appvendor.JFieldToken] == "" {
+	if result.Success == false {
+		t.Error("error: success is false, expect true")
+	}
+
+	if result.Data[appvendor.JFieldToken] == nil ||
+		result.Data[appvendor.JFieldToken] == "" {
 		t.Error("error: token field is empty, expect JWT token")
 	}
 
