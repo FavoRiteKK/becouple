@@ -200,7 +200,7 @@ func NewAPIController(app *BeCoupleApp) *APIController {
 		password := r.FormValue(appvendor.PropPassword)
 
 		if err := delegate.Var(key, "email"); err != nil {
-			logrus.WithError(err).Errorln("validate email")
+			logrus.WithError(err).Errorln("validate primaryID")
 			errs = append(errs, err)
 		}
 
