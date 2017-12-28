@@ -6,6 +6,11 @@ import (
 	"becouple/models/xodb"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/aarondl/tpl"
 	jwtPkg "github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
@@ -15,10 +20,6 @@ import (
 	"github.com/volatiletech/authboss"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/go-playground/validator.v9"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
 
 //=============================================================
@@ -251,8 +252,6 @@ func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
 		ErrCode: appvendor.ErrorGeneral,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-
 	// validate input
 	if errs := api.validator["/register"](r); len(errs) > 0 {
 		response.Err = appvendor.ConcateErrorWith(errs, "\n")
@@ -325,8 +324,6 @@ func (api *APIController) confirm(w http.ResponseWriter, r *http.Request) {
 		ErrCode: appvendor.ErrorGeneral,
 		Data:    make(models.Data),
 	}
-
-	w.Header().Set("Content-Type", "application/json")
 
 	// validate input
 	if errs := api.validator["/confirm"](r); errs != nil {
@@ -413,8 +410,6 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 		Data:    make(models.Data),
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-
 	// validate input
 	if errs := api.validator["/auth"](r); errs != nil {
 		response.Err = appvendor.ConcateErrorWith(errs, "\n")
@@ -483,6 +478,89 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	response.Data[appvendor.JFieldToken] = tokenString
 	response.Success = true
 	response.ErrCode = 0
+
+	json.NewEncoder(w).Encode(response)
+}
+
+// route '/api/user/personalInfo' method: GET
+func (api *APIController) getProfile(w http.ResponseWriter, r *http.Request) {
+	key := r.Header.Get(appvendor.PropPrimaryID)
+
+	// get user from storer and check if exists
+	obj, err := api.app.Storer.Get(key)
+	if err != nil {
+		appvendor.InternalServerError(w, "Cannot retrieve user from store")
+		return
+	}
+
+	user, ok := obj.(*xodb.User)
+	if !ok {
+		appvendor.InternalServerError(w, "Storer should returns a type AuthUser")
+		return
+	}
+
+	response := models.ServerResponse{
+		Success: true,
+		Data:    make(models.Data),
+		ErrCode: 0,
+	}
+	response.Data[appvendor.JFieldUserProfile] = user
+
+	json.NewEncoder(w).Encode(response)
+}
+
+// route '/api/user/personalInfo' params: shortAbout, livingAt, workingAt, hometown, status, weight, height
+func (api *APIController) editPersonalInfo(w http.ResponseWriter, r *http.Request) {
+
+	key := r.Header.Get(appvendor.PropPrimaryID)
+	shortAbout := strings.TrimSpace(r.FormValue(appvendor.PropShortAbout))
+	livingAt := strings.TrimSpace(r.FormValue(appvendor.PropLivingAt))
+	workingAt := strings.TrimSpace(r.FormValue(appvendor.PropWorkingAt))
+	hometown := strings.TrimSpace(r.FormValue(appvendor.PropHomeTown))
+	status := r.FormValue(appvendor.PropStatus)
+	weight := strings.TrimSpace(r.FormValue(appvendor.PropWeight))
+	height := strings.TrimSpace(r.FormValue(appvendor.PropHeight))
+
+	// get user from storer and check if exists
+	obj, err := api.app.Storer.Get(key)
+	if err != nil {
+		appvendor.InternalServerError(w, "Cannot retrieve user from store")
+		return
+	}
+
+	_, ok := obj.(*xodb.User)
+	if !ok {
+		appvendor.InternalServerError(w, "Storer should returns a type AuthUser")
+		return
+	}
+
+	// update user
+	attr := authboss.Attributes{}
+	attr[appvendor.PropShortAbout] = shortAbout
+	attr[appvendor.PropLivingAt] = livingAt
+	attr[appvendor.PropWorkingAt] = workingAt
+	attr[appvendor.PropHomeTown] = hometown
+
+	// correct status value
+	attr[appvendor.PropStatus] = []byte(status) // must convert to []byte
+
+	// correct weight value
+	_weight, _ := strconv.ParseUint(weight, 10, 0)
+	attr[appvendor.PropWeight] = uint8(_weight) // convert to match User's field type
+
+	// correct height value
+	_height, _ := strconv.ParseUint(height, 10, 0)
+	attr[appvendor.PropHeight] = uint8(_height) // convert to match User's field type
+
+	if err := api.app.Storer.Put(key, attr); err != nil {
+		appvendor.InternalServerError(w, "Cannot update attributes of confirmed user")
+		return
+	}
+
+	response := models.ServerResponse{
+		Success: true,
+		ErrCode: 0,
+	}
 
 	json.NewEncoder(w).Encode(response)
 }

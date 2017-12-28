@@ -3,13 +3,14 @@ package main_test
 import (
 	. "becouple"
 	"bytes"
-	"github.com/volatiletech/authboss"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/volatiletech/authboss"
 )
 
 var app *BeCoupleApp

@@ -3,6 +3,7 @@ package appvendor
 import (
 	"becouple/models/xodb"
 	"database/sql"
+
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/authboss"
 )
@@ -23,10 +24,7 @@ func NewAuthStorer() *AuthStorer {
 
 func (s AuthStorer) Create(_ string, attr authboss.Attributes) error {
 	user := xodb.NewLegalUser()
-	if err := BindAuthbossUser(user, attr); err != nil {
-		logrus.WithError(err).Errorln("cannot bind attribute to user")
-		return err
-	}
+	BindAuthbossUser(user, attr)
 
 	// save to db
 	err := s.dbHelper.Insert(user)
@@ -45,11 +43,7 @@ func (s AuthStorer) Put(key string, attr authboss.Attributes) error {
 		return err
 	}
 
-	err = BindAuthbossUser(user, attr)
-	if err != nil {
-		logrus.WithError(err).Errorln("cannot bind attribute to user")
-		return err
-	}
+	BindAuthbossUser(user, attr)
 
 	err = s.dbHelper.SaveUser(user)
 	if err != nil {

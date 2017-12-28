@@ -24,6 +24,14 @@ const (
 	PropConfirmToken = confirm.StoreConfirmToken
 	PropConfirmed    = confirm.StoreConfirmed
 	PropJwtError     = "error"
+	PropShortAbout   = "short_about"
+	PropLivingAt     = "living_at"
+	PropWorkingAt    = "working_at"
+	PropHomeTown     = "home_town"
+	PropStatus       = "status"
+	PropWeight       = "weight"
+	PropHeight       = "height"
 
-	JFieldToken = "token"
+	JFieldToken       = "token"
+	JFieldUserProfile = "user_profile"
 )

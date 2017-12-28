@@ -10,7 +10,3 @@ type ServerResponse struct {
 	Err     string                 `json:"error"`
 	ErrCode uint                   `json:"ecode"`
 }
-
-type AuthResponse struct {
-	Jwt string `json:"token"`
-}

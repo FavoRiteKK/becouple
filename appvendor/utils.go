@@ -2,9 +2,10 @@ package appvendor
 
 import (
 	"becouple/models/xodb"
+	"net/http"
+
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/authboss"
-	"net/http"
 )
 
 func InternalServerError(w http.ResponseWriter, err string) {
@@ -24,12 +25,9 @@ func ConcateErrorWith(errs []error, delim string) string {
 	return s
 }
 
-func BindAuthbossUser(user *xodb.User, attr authboss.Attributes) error {
+func BindAuthbossUser(user *xodb.User, attr authboss.Attributes) {
 	if err := attr.Bind(user, true); err != nil {
-		logrus.WithError(err).Errorln("cannot bind attribute to user")
-		return err
+		// if there is error, just warning, no error returned
+		logrus.WithError(err).Warnln("cannot bind attribute to user")
 	}
-
-	return nil
-
 }

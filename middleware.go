@@ -168,6 +168,9 @@ func NewJwtAuth() *JwtAuth {
 	return jwtToken
 }
 
+// extract the coming request, and verify JWT inside the request
+// if JWT is verified, have request's header contains the primary key
+// which is extracted from the JWT
 func (jwt *JwtAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// if except function return true for the request, then skip check jwt token
@@ -209,10 +212,7 @@ func (jwt *JwtAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		appvendor.InternalServerError(w, "the claims should have attribute 'Id' of string")
 	}
 
-	// check if token has error 'account not confirmed'
-	if _, ok := claims[appvendor.PropJwtError]; ok {
-		r.Header.Set(appvendor.PropJwtError, string(appvendor.ErrorAccountNotConfirmed))
-	}
+	r.Header.Set(appvendor.PropPrimaryID, key)
 
 	// serve next
 	jwt.next.ServeHTTP(w, r)

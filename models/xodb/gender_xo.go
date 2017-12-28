@@ -34,7 +34,7 @@ func (g NullGender) String() string {
 
 	switch g {
 	case GenderNil:
-		enumVal = "nil"
+		enumVal = ""
 
 	case GenderX:
 		enumVal = "X"
@@ -57,7 +57,7 @@ func (g NullGender) MarshalText() ([]byte, error) {
 // UnmarshalText unmarshals Gender from text.
 func (g *NullGender) UnmarshalText(text []byte) error {
 	switch string(text) {
-	case "nil":
+	case "":
 		*g = GenderNil
 
 	case "X":

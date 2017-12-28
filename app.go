@@ -4,6 +4,15 @@ import (
 	"becouple/appvendor"
 	"becouple/models/xodb"
 	"encoding/base64"
+	"html/template"
+	"io"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"regexp"
+
 	"github.com/betacraft/yaag/middleware"
 	"github.com/betacraft/yaag/yaag"
 	"github.com/gorilla/mux"
@@ -17,14 +26,6 @@ import (
 	aboauth "github.com/volatiletech/authboss/oauth2"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"html/template"
-	"io"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"os"
-	"path/filepath"
-	"regexp"
 )
 
 type BeCoupleApp struct {
@@ -182,10 +183,19 @@ func (app *BeCoupleApp) SetupRouter() {
 	// Api Routes
 	apiRouter.HandleFunc("/register",
 		WrapApiResponseHeader(app.APICtrl.register)).Methods("POST")
+
 	apiRouter.HandleFunc("/confirm",
 		WrapApiResponseHeader(app.APICtrl.confirm)).Methods("POST")
+
 	apiRouter.HandleFunc("/auth",
 		WrapApiResponseHeader(app.APICtrl.authenticate)).Methods("POST")
+
+	apiRouter.HandleFunc("/user/profile",
+		WrapApiResponseHeader(app.APICtrl.getProfile)).Methods("GET")
+
+	apiRouter.HandleFunc("/user/personalInfo",
+		WrapApiResponseHeader(app.APICtrl.editPersonalInfo)).Methods("POST")
+
 	apiRouter.HandleFunc("/logout",
 		WrapApiResponseHeader(app.APICtrl.logout)).Methods("POST")
 

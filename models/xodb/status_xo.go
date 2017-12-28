@@ -33,7 +33,7 @@ func (s NullStatus) String() string {
 
 	switch s {
 	case StatusNil:
-		enumVal = "nil"
+		enumVal = ""
 
 	case StatusSingle:
 		enumVal = "single"
@@ -56,7 +56,7 @@ func (s NullStatus) MarshalText() ([]byte, error) {
 // UnmarshalText unmarshals Status from text.
 func (s *NullStatus) UnmarshalText(text []byte) error {
 	switch string(text) {
-	case "nil":
+	case "":
 		*s = StatusNil
 
 	case "single":
@@ -69,7 +69,7 @@ func (s *NullStatus) UnmarshalText(text []byte) error {
 		*s = StatusComplicate
 
 	default:
-		return errors.New("invalid Status")
+		return errors.New("invalid status")
 	}
 
 	return nil
@@ -91,7 +91,7 @@ func (s *NullStatus) Scan(src interface{}) error {
 	}
 	buf, ok := src.([]byte)
 	if !ok {
-		return errors.New("invalid Status")
+		return errors.New("invalid status")
 	}
 
 	return s.UnmarshalText(buf)
