@@ -21,6 +21,7 @@ const (
 	PropEmail        = authboss.StoreEmail
 	PropPassword     = authboss.StorePassword
 	PropFullName     = "fullname"
+	PropDeviceName   = "device_name"
 	PropConfirmToken = confirm.StoreConfirmToken
 	PropConfirmed    = confirm.StoreConfirmed
 	PropJwtError     = "error"
@@ -32,6 +33,7 @@ const (
 	PropWeight       = "weight"
 	PropHeight       = "height"
 
-	JFieldToken       = "token"
-	JFieldUserProfile = "user_profile"
+	JFieldToken        = "access_token"
+	JFieldRefreshToken = "refresh_token"
+	JFieldUserProfile  = "user_profile"
 )

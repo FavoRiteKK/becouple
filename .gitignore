@@ -1,3 +1,7 @@
 .idea/
 vendor/
 becouple
+.vscode/
+*.bak
+/debug
+/debug.test

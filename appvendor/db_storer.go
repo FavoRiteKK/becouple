@@ -8,6 +8,10 @@ import (
 	"github.com/volatiletech/authboss"
 )
 
+type IDBStorer interface {
+	SaveCredential(refreshToken, key, deviceName string) error
+}
+
 type AuthStorer struct {
 	dbHelper DBManager
 }
@@ -101,4 +105,15 @@ func (s AuthStorer) DeleteUser(user *xodb.User) error {
 
 func (s AuthStorer) DeletePermanently(user *xodb.User) error {
 	return s.dbHelper.DeletePermanently(user)
+}
+
+func (s AuthStorer) SaveCredential(refreshToken, key, deviceName string) error {
+
+	credential := &xodb.Credential{
+		RefreshToken: refreshToken,
+		Email:        key,
+		DeviceName:   deviceName,
+	}
+
+	return s.dbHelper.SaveCredential(credential)
 }

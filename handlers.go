@@ -243,6 +243,35 @@ func NewAPIController(app *BeCoupleApp) *APIController {
 	return api
 }
 
+func generateAccessToken(key string) (string, error) {
+
+	// Create a new token object, specifying signing method and the claims
+	// you would like it to contain.
+	mcl := jwtPkg.MapClaims{
+		"Id":  key,
+		"exp": time.Now().Add(time.Minute * 10).Unix(),
+		//TODO [production] may change these when go live
+	}
+
+	token := jwtPkg.NewWithClaims(appJwtSigningMethod, mcl)
+
+	// Sign and get the complete encoded token as a string using the secret
+	return token.SignedString([]byte(appJwtSecret)) // must convert to []byte, otherwise we get error 'key is invalid'
+}
+
+func generateRefreshToken(key string) (string, error) {
+	// Create a new never-expired refresh_token
+	mcl := jwtPkg.MapClaims{
+		"Id": key,
+	}
+
+	token := jwtPkg.NewWithClaims(appJwtSigningMethod, mcl)
+
+	// Sign and get the complete encoded token as a string using the secret
+	tokenString, err := token.SignedString([]byte(appJwtSecret)) // must convert to []byte, otherwise we get error 'key is invalid'
+	return tokenString, err
+}
+
 // route '/api/register'
 func (api *APIController) register(w http.ResponseWriter, r *http.Request) {
 
@@ -335,6 +364,7 @@ func (api *APIController) confirm(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue(appvendor.PropPrimaryID)
 	password := r.FormValue(appvendor.PropPassword)
 	cnfToken := r.FormValue(appvendor.PropConfirmToken)
+	deviceName := r.FormValue(appvendor.PropDeviceName)
 
 	// get user from storer and check if exists
 	obj, err := api.app.Storer.Get(key)
@@ -375,23 +405,21 @@ func (api *APIController) confirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create a new token object, specifying signing method and the claims
-	// you would like it to contain.
-	mcl := jwtPkg.MapClaims{
-		"Id":  key,
-		"exp": time.Now().Add(time.Minute * 10).Unix(),
-		//TODO [production] may change these when go live
-	}
-
-	token := jwtPkg.NewWithClaims(appJwtSigningMethod, mcl)
-
-	// Sign and get the complete encoded token as a string using the secret
-	tokenString, err := token.SignedString([]byte(appJwtSecret)) // must convert to []byte, otherwise we get error 'key is invalid'
-
+	// create access token
+	tokenString, err := generateAccessToken(key)
 	if err != nil {
 		appvendor.InternalServerError(w, err.Error())
 		return
 	}
+
+	// create refresh token
+	refreshToken, err := generateRefreshToken(key)
+	if err != nil {
+		appvendor.InternalServerError(w, err.Error())
+		return
+	}
+	// save refresh token
+	api.app.Storer.SaveCredential(refreshToken, key, deviceName)
 
 	response.Data[appvendor.JFieldToken] = tokenString
 	response.Success = true
@@ -419,6 +447,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 
 	key := r.FormValue(appvendor.PropPrimaryID)
 	password := r.FormValue(appvendor.PropPassword)
+	deviceName := r.FormValue(appvendor.PropDeviceName)
 
 	// get primary from storer and check if exists
 	obj, err := api.app.Storer.Get(key)
@@ -457,25 +486,25 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create a new token object, specifying signing method and the claims
-	// you would like it to contain.
-	mcl := jwtPkg.MapClaims{
-		"Id":  key,
-		"exp": time.Now().Add(time.Minute * 10).Unix(),
-		//TODO [production] may change these when go live
-	}
-
-	token := jwtPkg.NewWithClaims(appJwtSigningMethod, mcl)
-
-	// Sign and get the complete encoded token as a string using the secret
-	tokenString, err := token.SignedString([]byte(appJwtSecret)) // must convert to []byte, otherwise we get error 'key is invalid'
-
+	// create access token
+	tokenString, err := generateAccessToken(key)
 	if err != nil {
 		appvendor.InternalServerError(w, err.Error())
 		return
 	}
 
+	// create refresh token
+	refreshToken, err := generateRefreshToken(key)
+	if err != nil {
+		appvendor.InternalServerError(w, err.Error())
+		return
+	}
+
+	// save refresh token
+	api.app.Storer.SaveCredential(refreshToken, key, deviceName)
+
 	response.Data[appvendor.JFieldToken] = tokenString
+	response.Data[appvendor.JFieldRefreshToken] = refreshToken
 	response.Success = true
 	response.ErrCode = 0
 

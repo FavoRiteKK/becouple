@@ -8,41 +8,7 @@ A MVP project developed with Go. The purpose is to enhance my CV
 * Mobile app
 * Backend
 
-### api specification ###
-
-## Middleware
-# Error token is expired
-
-## register : /api/register
-# request
-- primaryID (represent unique identifier, such as email)
-- password
-- fullname
-# response
-- on success, return normal response
-
-   After registration, the use must confirm their account, using confirm token received via their email
-
-## confirm : /api/confirm
-# request 
-- JWT (Header 'Bearer')
-- __email__ (generated from JWT)
-- confirm\_token
-# response
-- on success, return normal response
-
-   After this step, the user can login their account
-- on error, return [ General, Cannot confirm user ]
-
-## authenticate : /api/auth
-# request
-- primaryID
-- password
-# response
-
-   {
-   	success: 1,
-	data: {
-	    token: {JSon Web Token here}
-	}
-   }
+### generate database models ###
+* database name: app_mvp_dating
+* tool: https://github.com/xo/xo
+* command:  <project_dir>$ xo mysql://root:qweasdzxc@123@localhost/app_mvp_dating -o ./models/xodb -f _xo.go --ignore-fields create_time update_time --template-path ./database/xo_templates/

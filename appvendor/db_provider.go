@@ -4,13 +4,15 @@ import (
 	"becouple/models/xodb"
 	"database/sql"
 	"errors"
-	_ "github.com/go-sql-driver/mysql"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type DBManager interface {
 	Connect() error
 	HasConn() (bool, error)
+
 	Insert(user *xodb.User) error
 	GetUserByEmail(email string) (*xodb.User, error)
 
@@ -18,6 +20,8 @@ type DBManager interface {
 
 	DeleteUser(user *xodb.User) error
 	DeletePermanently(user *xodb.User) error
+
+	SaveCredential(credential *xodb.Credential) error
 }
 
 type manager struct {
@@ -106,4 +110,12 @@ func (mgr *manager) DeletePermanently(user *xodb.User) error {
 	}
 
 	return user.DeletePermanently(mgr.db)
+}
+
+func (mgr *manager) SaveCredential(credential *xodb.Credential) error {
+	if ok, err := mgr.HasConn(); !ok {
+		return err
+	}
+
+	return credential.Save(mgr.db)
 }
