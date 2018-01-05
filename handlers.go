@@ -26,6 +26,7 @@ import (
 // type WebController
 //=============================================================
 
+//WebController controller for web routes
 type WebController struct {
 	app        *BeCoupleApp
 	decoder    *schema.Decoder
@@ -33,6 +34,7 @@ type WebController struct {
 	CsrfEnable bool
 }
 
+//NewWebController creates new web controller
 func NewWebController(app *BeCoupleApp) *WebController {
 	ctrl := new(WebController)
 
@@ -181,11 +183,20 @@ func (ctrl *WebController) layoutData(w http.ResponseWriter, r *http.Request) au
 // type ApiController
 //=============================================================
 
+const (
+	// expireIn in 10 minutes (in miliseconds unit)
+	expireIn int64 = 10 * 60 * 1000 //TODO may change in production
+	// expDuration in duration unit
+	expDuration time.Duration = time.Duration(expireIn) * time.Millisecond
+)
+
+//APIController controller for API routes
 type APIController struct {
 	app       *BeCoupleApp
 	validator map[string]func(r *http.Request) []error
 }
 
+//NewAPIController creates new API controller
 func NewAPIController(app *BeCoupleApp) *APIController {
 	api := new(APIController)
 	api.app = app
@@ -244,12 +255,12 @@ func NewAPIController(app *BeCoupleApp) *APIController {
 }
 
 func generateAccessToken(key string) (string, error) {
-
+	expireAt := time.Now().Add(expDuration).Unix()
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain.
 	mcl := jwtPkg.MapClaims{
 		"Id":  key,
-		"exp": time.Now().Add(time.Minute * 10).Unix(),
+		"exp": expireAt,
 		//TODO [production] may change these when go live
 	}
 
@@ -422,6 +433,8 @@ func (api *APIController) confirm(w http.ResponseWriter, r *http.Request) {
 	api.app.Storer.SaveCredential(refreshToken, key, deviceName)
 
 	response.Data[appvendor.JFieldToken] = tokenString
+	response.Data[appvendor.JFieldRefreshToken] = refreshToken
+	response.Data[appvendor.JFieldExpireIn] = expireIn
 	response.Success = true
 	response.ErrCode = 0
 
@@ -505,13 +518,14 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 
 	response.Data[appvendor.JFieldToken] = tokenString
 	response.Data[appvendor.JFieldRefreshToken] = refreshToken
+	response.Data[appvendor.JFieldExpireIn] = expireIn
 	response.Success = true
 	response.ErrCode = 0
 
 	json.NewEncoder(w).Encode(response)
 }
 
-// route '/api/user/personalInfo' method: GET
+// route '/api/user/profile' method: GET
 func (api *APIController) getProfile(w http.ResponseWriter, r *http.Request) {
 	key := r.Header.Get(appvendor.PropPrimaryID)
 
@@ -592,6 +606,44 @@ func (api *APIController) editPersonalInfo(w http.ResponseWriter, r *http.Reques
 	}
 
 	json.NewEncoder(w).Encode(response)
+}
+
+// route '/api/refreshToken' params: refresh_token, device_name
+func (api *APIController) refreshToken(w http.ResponseWriter, r *http.Request) {
+	// default response to error
+	response := models.ServerResponse{
+		Success: false,
+		ErrCode: appvendor.ErrorGeneral,
+		Data:    make(models.Data),
+	}
+
+	refreshToken := r.FormValue(appvendor.JFieldRefreshToken)
+	deviceName := r.FormValue(appvendor.PropDeviceName)
+
+	// find credential in db
+	cred, err := api.app.Storer.GetCredentialByRefreshToken(refreshToken, deviceName)
+	if err != nil {
+		response.ErrCode = appvendor.ErrorRefreshTokenInvalid
+		response.Err = "Invalid refresh token and/or device name"
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// refresh access token
+	tokenString, err := generateAccessToken(cred.Email)
+	if err != nil {
+		appvendor.InternalServerError(w, err.Error())
+		return
+	}
+
+	response.Data[appvendor.JFieldToken] = tokenString
+	response.Data[appvendor.JFieldRefreshToken] = refreshToken
+	response.Data[appvendor.JFieldExpireIn] = expireIn
+	response.Success = true
+	response.ErrCode = 0
+
+	json.NewEncoder(w).Encode(response)
+
 }
 
 // route '/api/logout'

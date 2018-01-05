@@ -16,6 +16,7 @@ const (
 	ErrorTokenExpired
 	ErrorTokenIssuedAt
 	ErrorTokenNotValidYet
+	ErrorRefreshTokenInvalid
 
 	PropPrimaryID    = "primaryID"
 	PropEmail        = authboss.StoreEmail
@@ -35,5 +36,6 @@ const (
 
 	JFieldToken        = "access_token"
 	JFieldRefreshToken = "refresh_token"
+	JFieldExpireIn     = "expire_in"
 	JFieldUserProfile  = "user_profile"
 )

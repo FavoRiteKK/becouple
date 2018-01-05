@@ -117,3 +117,11 @@ func (s AuthStorer) SaveCredential(refreshToken, key, deviceName string) error {
 
 	return s.dbHelper.SaveCredential(credential)
 }
+
+func (s AuthStorer) GetCredentialByRefreshToken(refreshToken string, deviceName string) (*xodb.Credential, error) {
+	cred, err := s.dbHelper.GetCredentialByRefreshToken(refreshToken, deviceName)
+	if err != nil {
+		logrus.WithError(err).Errorln("error with get credential method")
+	}
+	return cred, err
+}

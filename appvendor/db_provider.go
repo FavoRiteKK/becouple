@@ -22,6 +22,7 @@ type DBManager interface {
 	DeletePermanently(user *xodb.User) error
 
 	SaveCredential(credential *xodb.Credential) error
+	GetCredentialByRefreshToken(refreshToken string, deviceName string) (*xodb.Credential, error)
 }
 
 type manager struct {
@@ -118,4 +119,12 @@ func (mgr *manager) SaveCredential(credential *xodb.Credential) error {
 	}
 
 	return credential.Save(mgr.db)
+}
+
+func (mgr *manager) GetCredentialByRefreshToken(refreshToken string, deviceName string) (*xodb.Credential, error) {
+	if ok, err := mgr.HasConn(); !ok {
+		return nil, err
+	}
+
+	return xodb.CredentialByRefreshToken(mgr.db, refreshToken, deviceName)
 }

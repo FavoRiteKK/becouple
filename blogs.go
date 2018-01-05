@@ -2,6 +2,7 @@ package main
 
 import "time"
 
+//Blog unused
 type Blog struct {
 	ID       int
 	Title    string
@@ -10,6 +11,7 @@ type Blog struct {
 	Content  string
 }
 
+//Blogs unused
 type Blogs []Blog
 
 var blogs = Blogs{
@@ -24,8 +26,9 @@ var blogs = Blogs{
 	},
 }
 
+//Get unused
 func (blgs *Blogs) Get(id int) *Blog {
-	for i, _ := range blogs {
+	for i := range blogs {
 		b := &blogs[i]
 		if b.ID == id {
 			return b
@@ -34,6 +37,7 @@ func (blgs *Blogs) Get(id int) *Blog {
 	return nil
 }
 
+//Delete unused
 func (blgs *Blogs) Delete(id int) {
 	if len(blogs) == 1 {
 		blogs = []Blog{}
@@ -41,7 +45,7 @@ func (blgs *Blogs) Delete(id int) {
 	}
 
 	found := -1
-	for i, _ := range blogs {
+	for i := range blogs {
 		b := &blogs[i]
 		if b.ID == id {
 			found = i

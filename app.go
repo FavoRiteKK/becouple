@@ -28,6 +28,7 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
+// BeCoupleApp the main application
 type BeCoupleApp struct {
 	WebCtrl *WebController
 	APICtrl *APIController
@@ -36,14 +37,15 @@ type BeCoupleApp struct {
 	Storer  *appvendor.AuthStorer
 }
 
-func NewApp(authbossRootUrl string) *BeCoupleApp {
+// NewApp creates new main application
+func NewApp(authbossRootURL string) *BeCoupleApp {
 	app := &BeCoupleApp{}
 
-	app.BeforSetup()
+	app.BeforeSetup()
 	app.Storer = appvendor.NewAuthStorer()
 
 	app.SetupControllers()
-	app.SetupAuthBoss(authbossRootUrl)
+	app.SetupAuthBoss(authbossRootURL)
 	app.SetupRouter()
 	app.SetupClientStore()
 
@@ -67,7 +69,8 @@ func NewApp(authbossRootUrl string) *BeCoupleApp {
 //    return app.storer
 //}
 
-func (app *BeCoupleApp) BeforSetup() {
+// BeforeSetup : entrance before app's components setup
+func (app *BeCoupleApp) BeforeSetup() {
 	logrus.AddHook(filename.NewHook())
 	xodb.XOLog = func(query string, params ...interface{}) {
 		logrus.WithFields(logrus.Fields{
@@ -77,6 +80,7 @@ func (app *BeCoupleApp) BeforSetup() {
 	}
 }
 
+// SetupControllers setups web and api controllers
 func (app *BeCoupleApp) SetupControllers() {
 	web := NewWebController(app)
 	app.WebCtrl = web
@@ -85,7 +89,8 @@ func (app *BeCoupleApp) SetupControllers() {
 	app.APICtrl = api
 }
 
-func (app *BeCoupleApp) SetupAuthBoss(rootUrl string) {
+// SetupAuthBoss setups authboss module
+func (app *BeCoupleApp) SetupAuthBoss(rootURL string) {
 	ab := authboss.New()
 	app.Ab = ab
 
@@ -93,7 +98,7 @@ func (app *BeCoupleApp) SetupAuthBoss(rootUrl string) {
 	ab.OAuth2Storer = app.Storer
 	ab.MountPath = "/auth"
 	ab.ViewsPath = "ab_views"
-	ab.RootURL = rootUrl
+	ab.RootURL = rootURL
 
 	ab.LayoutDataMaker = app.WebCtrl.layoutData
 
@@ -153,6 +158,7 @@ func (app *BeCoupleApp) SetupAuthBoss(rootUrl string) {
 	}
 }
 
+// SetupRouter setups routes and paths
 func (app *BeCoupleApp) SetupRouter() {
 	// Set up our router
 	router := mux.NewRouter()
@@ -182,24 +188,25 @@ func (app *BeCoupleApp) SetupRouter() {
 
 	// Api Routes
 	apiRouter.HandleFunc("/register",
-		WrapApiResponseHeader(app.APICtrl.register)).Methods("POST")
+		WrapAPIResponseHeader(app.APICtrl.register)).Methods("POST")
 
 	apiRouter.HandleFunc("/confirm",
-		WrapApiResponseHeader(app.APICtrl.confirm)).Methods("POST")
+		WrapAPIResponseHeader(app.APICtrl.confirm)).Methods("POST")
 
 	apiRouter.HandleFunc("/auth",
-		WrapApiResponseHeader(app.APICtrl.authenticate)).Methods("POST")
+		WrapAPIResponseHeader(app.APICtrl.authenticate)).Methods("POST")
 
 	apiRouter.HandleFunc("/user/profile",
-		WrapApiResponseHeader(app.APICtrl.getProfile)).Methods("GET")
+		WrapAPIResponseHeader(app.APICtrl.getProfile)).Methods("GET")
 
 	apiRouter.HandleFunc("/user/personalInfo",
-		WrapApiResponseHeader(app.APICtrl.editPersonalInfo)).Methods("POST")
+		WrapAPIResponseHeader(app.APICtrl.editPersonalInfo)).Methods("POST")
 
 	apiRouter.HandleFunc("/logout",
-		WrapApiResponseHeader(app.APICtrl.logout)).Methods("POST")
+		WrapAPIResponseHeader(app.APICtrl.logout)).Methods("POST")
 
-	//TODO /api/refresh_token
+	apiRouter.HandleFunc("/refreshToken",
+		WrapAPIResponseHeader(app.APICtrl.refreshToken)).Methods("POST")
 
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -207,6 +214,7 @@ func (app *BeCoupleApp) SetupRouter() {
 	})
 }
 
+// SetupMiddleware setups middelwares
 func (app *BeCoupleApp) SetupMiddleware() http.Handler {
 	// Set up our middleware chain
 	// also, remove csrf validator for any route path that contains /api/
@@ -221,6 +229,7 @@ func (app *BeCoupleApp) SetupMiddleware() http.Handler {
 	return middleware.Handle(stack)
 }
 
+//SetupClientStore setups client store
 func (app *BeCoupleApp) SetupClientStore() {
 	// Initialize Sessions and Cookies
 	// Typically gorilla securecookie and sessions packages require

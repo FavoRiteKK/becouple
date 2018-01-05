@@ -7,15 +7,16 @@ import (
 	"becouple/appvendor"
 	"becouple/models"
 	"encoding/json"
+	"net/http/httptest"
+	"regexp"
+	"strings"
+
 	jwtPkg "github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 	"github.com/gorilla/mux"
 	"github.com/justinas/nosurf"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/authboss"
-	"net/http/httptest"
-	"regexp"
-	"strings"
 )
 
 type authProtector struct {
@@ -39,8 +40,8 @@ func (ap authProtector) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// this wrapper wraps given handler f, changes f's response header
-func WrapApiResponseHeader(f http.HandlerFunc) http.HandlerFunc {
+//WrapAPIResponseHeader wraps given handler f, changes f's response header
+func WrapAPIResponseHeader(f http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Del("Set-Cookie")
 		w.Header().Del("Vary")
@@ -137,7 +138,7 @@ func jwtMiddleware() func(next http.Handler) http.Handler {
 			path := r.URL.Path
 
 			// exempt this exactly path
-			if strings.Contains("/api/auth;/api/register;/api/confirm", path) {
+			if strings.Contains("/api/auth;/api/register;/api/confirm;/api/refreshToken", path) {
 				return true
 			}
 
@@ -155,6 +156,7 @@ var (
 	appJwtSecret        = "qweasd123"
 )
 
+//JwtAuth represents JWT middleware
 type JwtAuth struct {
 	token *jwtPkg.Token
 	next  http.Handler
@@ -162,6 +164,7 @@ type JwtAuth struct {
 	except func(r *http.Request) bool
 }
 
+//NewJwtAuth creates new JWT middleware
 func NewJwtAuth() *JwtAuth {
 	jwtToken := &JwtAuth{}
 
@@ -222,12 +225,14 @@ func (jwt *JwtAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // No resource middleware
 //////////////////////////////////////////////////
 
+//NoResourceHandler represents no resource handler middleware
 type NoResourceHandler struct {
 	next http.Handler
 	// method to parse request, return true if request should be skipped for jwt token validation
 	router *mux.Router
 }
 
+//NewNoResourceHandler creates new no resource hanlder middleware
 func NewNoResourceHandler() *NoResourceHandler {
 	return &NoResourceHandler{}
 }

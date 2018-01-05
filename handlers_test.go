@@ -325,6 +325,34 @@ func TestApiEditPersonalInfo(t *testing.T) {
 	}
 }
 
+func TestApiRefreshToken(t *testing.T) {
+	h := app.SetupMiddleware()
+
+	w := httptest.NewRecorder()
+
+	// process refresh token function test
+	vals := url.Values{}
+	vals.Set(appvendor.JFieldRefreshToken, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJZCI6InF3ZUBnbWFpbC5jb20ifQ.RlX2mNc9TWHQ1Nhjm7Gr7sPx0fp_nqztiK2Lj1KOedk")
+	vals.Set(appvendor.PropDeviceName, "Lenovo P1ma40")
+
+	w = httptest.NewRecorder()
+	r, _ := http.NewRequest("POST", "/api/refreshToken", bytes.NewBufferString(vals.Encode()))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	h.ServeHTTP(w, r)
+	t.Logf("/user/editPersonalInfo response: %v, %v", w.Code, w.Body.String())
+
+	// test result
+	result := new(models.ServerResponse)
+	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
+		t.Error("Body response is malformed, compare above.")
+	}
+
+	if result.Success != true {
+		t.Error("editPersonalInfo function seems malfunctioned.")
+	}
+}
+
 func TestApiLogout(t *testing.T) {
 	h := app.SetupMiddleware()
 

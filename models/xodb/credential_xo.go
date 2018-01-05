@@ -40,13 +40,13 @@ func (c *Credential) Insert(db XODB) error {
 
 	// sql insert query, primary key must be provided
 	const sqlstr = `INSERT INTO app_mvp_dating.credentials (` +
-		`cred_id, device_name, refresh_token, email, deleted` +
+		`device_name, refresh_token, email, deleted` +
 		`) VALUES (` +
 		`?, ?, ?, ?, ?` +
 		`)`
 
 	// run query
-	XOLog(sqlstr, c.CredID, c.DeviceName, c.RefreshToken, c.Email, c.Deleted)
+	XOLog(sqlstr, c.DeviceName, c.RefreshToken, c.Email, c.Deleted)
 	_, err = db.Exec(sqlstr, c.CredID, c.DeviceName, c.RefreshToken, c.Email, c.Deleted)
 	if err != nil {
 		return err
@@ -130,7 +130,7 @@ func CredentialByCredID(db XODB, credID uint) (*Credential, error) {
 
 	// sql query
 	const sqlstr = `SELECT ` +
-		`cred_id, device_name, refresh_token, email, deleted ` +
+		`cred_id, device_name, refresh_token, email, deleted+0 ` +
 		`FROM app_mvp_dating.credentials ` +
 		`WHERE cred_id = ?`
 
@@ -141,6 +141,30 @@ func CredentialByCredID(db XODB, credID uint) (*Credential, error) {
 	}
 
 	err = db.QueryRow(sqlstr, credID).Scan(&c.CredID, &c.DeviceName, &c.RefreshToken, &c.Email, &c.Deleted)
+	if err != nil {
+		return nil, err
+	}
+
+	return &c, nil
+}
+
+// CredentialByRefreshToken retrieves a row from 'app_mvp_dating.credentials' as a Credential.
+func CredentialByRefreshToken(db XODB, refreshToken string, deviceName string) (*Credential, error) {
+	var err error
+
+	// sql query
+	const sqlstr = `SELECT ` +
+		`cred_id, device_name, refresh_token, email, deleted+0 ` +
+		`FROM app_mvp_dating.credentials ` +
+		`WHERE refresh_token = ? AND device_name = ?`
+
+	// run query
+	XOLog(sqlstr, refreshToken, deviceName)
+	c := Credential{
+		_exists: true,
+	}
+
+	err = db.QueryRow(sqlstr, refreshToken, deviceName).Scan(&c.CredID, &c.DeviceName, &c.RefreshToken, &c.Email, &c.Deleted)
 	if err != nil {
 		return nil, err
 	}
