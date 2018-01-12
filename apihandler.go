@@ -1,3 +1,6 @@
+//=============================================================
+// type ApiController
+//=============================================================
 package main
 
 import (
@@ -5,183 +8,19 @@ import (
 	"becouple/models"
 	"becouple/models/xodb"
 	"encoding/json"
-	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/aarondl/tpl"
 	jwtPkg "github.com/dgrijalva/jwt-go"
-	"github.com/gorilla/mux"
-	"github.com/gorilla/schema"
-	"github.com/justinas/nosurf"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/authboss"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/go-playground/validator.v9"
 )
-
-//=============================================================
-// type WebController
-//=============================================================
-
-//WebController controller for web routes
-type WebController struct {
-	app        *BeCoupleApp
-	decoder    *schema.Decoder
-	templates  tpl.Templates
-	CsrfEnable bool
-}
-
-//NewWebController creates new web controller
-func NewWebController(app *BeCoupleApp) *WebController {
-	ctrl := new(WebController)
-
-	ctrl.app = app
-	ctrl.decoder = schema.NewDecoder()
-	ctrl.decoder.IgnoreUnknownKeys(true)
-
-	ctrl.templates = tpl.Must(tpl.Load("views", "views/partials", "layout.html.tpl", funcs))
-
-	ctrl.CsrfEnable = true
-
-	return ctrl
-}
-
-// route '/', '/blogs'
-func (ctrl *WebController) index(w http.ResponseWriter, r *http.Request) {
-	data := ctrl.layoutData(w, r).MergeKV("posts", blogs)
-	ctrl.mustRender(w, r, "index", data)
-}
-
-// route '/blogs/new
-func (ctrl *WebController) newblog(w http.ResponseWriter, r *http.Request) {
-	data := ctrl.layoutData(w, r).MergeKV("post", Blog{})
-	ctrl.mustRender(w, r, "new", data)
-}
-
-var nextID = len(blogs) + 1
-
-// route /blogs/new
-func (ctrl *WebController) create(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if badRequest(w, err) {
-		return
-	}
-
-	var b Blog
-	if badRequest(w, ctrl.decoder.Decode(&b, r.PostForm)) {
-		return
-	}
-
-	b.ID = nextID
-	nextID++
-	b.Date = time.Now()
-	b.AuthorID = "Zeratul"
-
-	blogs = append(blogs, b)
-
-	http.Redirect(w, r, "/", http.StatusFound)
-}
-
-// route '/blogs/{id}/edit'
-func (ctrl *WebController) edit(w http.ResponseWriter, r *http.Request) {
-	id, ok := ctrl.blogID(w, r)
-	if !ok {
-		return
-	}
-
-	data := ctrl.layoutData(w, r).MergeKV("post", blogs.Get(id))
-	ctrl.mustRender(w, r, "edit", data)
-}
-
-// route '/blogs/{id}/edit'
-func (ctrl *WebController) update(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if badRequest(w, err) {
-		return
-	}
-
-	id, ok := ctrl.blogID(w, r)
-	if !ok {
-		return
-	}
-
-	var b = blogs.Get(id)
-	if badRequest(w, ctrl.decoder.Decode(b, r.PostForm)) {
-		return
-	}
-
-	b.Date = time.Now()
-
-	http.Redirect(w, r, "/", http.StatusFound)
-}
-
-// route '/blogs/{id}/destroy'
-func (ctrl *WebController) destroy(w http.ResponseWriter, r *http.Request) {
-	id, ok := ctrl.blogID(w, r)
-	if !ok {
-		return
-	}
-
-	blogs.Delete(id)
-
-	http.Redirect(w, r, "/", http.StatusFound)
-}
-
-func (ctrl *WebController) blogID(w http.ResponseWriter, r *http.Request) (int, bool) {
-	vars := mux.Vars(r)
-	str := vars["id"]
-
-	id, err := strconv.Atoi(str)
-	if err != nil {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return 0, false
-	}
-
-	if id <= 0 {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return 0, false
-	}
-
-	return id, true
-}
-
-func (ctrl *WebController) mustRender(w http.ResponseWriter, r *http.Request, name string, data authboss.HTMLData) {
-	if ctrl.CsrfEnable {
-		data.MergeKV("csrf_token", nosurf.Token(r))
-	}
-
-	err := ctrl.templates.Render(w, name, data)
-	if err == nil {
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprintln(w, "Error occurred rendering templates:", err)
-}
-
-func (ctrl *WebController) layoutData(w http.ResponseWriter, r *http.Request) authboss.HTMLData {
-	currentUserName := ""
-	userInter, err := ctrl.app.Ab.CurrentUser(w, r)
-	if userInter != nil && err == nil {
-		currentUserName = userInter.(*xodb.User).Fullname
-	}
-
-	return authboss.HTMLData{
-		"loggedin":               userInter != nil,
-		"username":               "",
-		authboss.FlashSuccessKey: ctrl.app.Ab.FlashSuccess(w, r),
-		authboss.FlashErrorKey:   ctrl.app.Ab.FlashError(w, r),
-		"current_user_name":      currentUserName,
-	}
-}
-
-//=============================================================
-// type ApiController
-//=============================================================
 
 const (
 	// expireIn in 10 minutes (in miliseconds unit)
@@ -547,6 +386,7 @@ func (api *APIController) getProfile(w http.ResponseWriter, r *http.Request) {
 		Data:    make(models.Data),
 		ErrCode: 0,
 	}
+
 	response.Data[appvendor.JFieldUserProfile] = user
 
 	json.NewEncoder(w).Encode(response)
@@ -594,6 +434,56 @@ func (api *APIController) editPersonalInfo(w http.ResponseWriter, r *http.Reques
 	// correct height value
 	_height, _ := strconv.ParseUint(height, 10, 0)
 	attr[appvendor.PropHeight] = uint8(_height) // convert to match User's field type
+
+	if err := api.app.Storer.Put(key, attr); err != nil {
+		appvendor.InternalServerError(w, "Cannot update attributes of confirmed user")
+		return
+	}
+
+	response := models.ServerResponse{
+		Success: true,
+		ErrCode: 0,
+	}
+
+	json.NewEncoder(w).Encode(response)
+}
+
+// route '/api/user/basicInfo' params: fullname, nickname, birthday, gender, job
+func (api *APIController) editBasicInfo(w http.ResponseWriter, r *http.Request) {
+
+	key := r.Header.Get(appvendor.PropPrimaryID)
+	fullname := strings.TrimSpace(r.FormValue(appvendor.PropFullName))
+	nickname := strings.TrimSpace(r.FormValue(appvendor.PropNickName))
+	birthDay := strings.TrimSpace(r.FormValue(appvendor.PropDateOfBirth))
+	gender := r.FormValue(appvendor.PropGender)
+	job := strings.TrimSpace(r.FormValue(appvendor.PropJob))
+
+	// get user from storer and check if exists
+	obj, err := api.app.Storer.Get(key)
+	if err != nil {
+		appvendor.InternalServerError(w, "Cannot retrieve user from store")
+		return
+	}
+
+	_, ok := obj.(*xodb.User)
+	if !ok {
+		appvendor.InternalServerError(w, "Storer should returns a type AuthUser")
+		return
+	}
+
+	// update user
+	attr := authboss.Attributes{}
+	attr[appvendor.PropFullName] = fullname
+	attr[appvendor.PropNickName] = nickname
+
+	if birthDay != "" {
+		attr[appvendor.PropDateOfBirth] = birthDay
+	}
+
+	attr[appvendor.PropJob] = job
+
+	// correct status value
+	attr[appvendor.PropGender] = []byte(gender) // must convert to []byte
 
 	if err := api.app.Storer.Put(key, attr); err != nil {
 		appvendor.InternalServerError(w, "Cannot update attributes of confirmed user")
@@ -664,4 +554,71 @@ func (api *APIController) logout(w http.ResponseWriter, r *http.Request) {
 
 	// request is fine
 	json.NewEncoder(w).Encode(resp)
+}
+
+const (
+	_uploadDir           string = "/home/khiemnv/Pictures/_goupload/"
+	_maxBytesRequestBody int64  = 100 * 1024 * 1024
+)
+
+//http://sanatgersappa.blogspot.sg/2013/03/handling-multiple-file-uploads-in-go.html
+// if got error 'http: multipart handled by ParseMultipartForm', disable yaag middle in app.go
+// route '/api/upload'
+func (api *APIController) upload(w http.ResponseWriter, r *http.Request) {
+	// limit request body to 100MB
+	r.Body = http.MaxBytesReader(w, r.Body, _maxBytesRequestBody)
+
+	//get the multipart reader for the request.
+	reader, err := r.MultipartReader()
+
+	if err != nil {
+		appvendor.InternalServerError(w, err.Error())
+		return
+	}
+
+	logrus.Infoln("Copy part to ", _uploadDir)
+	//copy each part to destination.
+	count := 0
+
+	for {
+		part, err := reader.NextPart()
+		if err == io.EOF {
+			break
+		}
+
+		count++
+		logrus.WithField("part #", count).Infoln("Next part counter now is")
+
+		//if part.FileName() is empty, skip this iteration.
+		if part.FileName() == "" {
+			logrus.Debugln("caught empty filename")
+			continue
+		}
+
+		logrus.WithField("filename", part.FileName()).Infoln("Create copy of uploaded file")
+		dst, err := os.Create(_uploadDir + part.FileName())
+		defer dst.Close()
+
+		if err != nil {
+			appvendor.InternalServerError(w, err.Error())
+			return
+		}
+
+		logrus.Infoln("Copy from part to destination")
+		if _, err := io.Copy(dst, part); err != nil {
+			if err.Error() == "http: request body too large" {
+				// request is too large
+				json.NewEncoder(w).Encode(&models.ServerResponse{
+					Success: false,
+					ErrCode: appvendor.ErrorRequestBodyTooLarge,
+					Err:     "http: request body too large",
+				})
+			} else {
+				appvendor.InternalServerError(w, err.Error())
+			}
+			return
+		}
+	}
+	//display success message
+	logrus.Infoln("Upload process successes")
 }

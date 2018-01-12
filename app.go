@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"regexp"
 
+	// "github.com/betacraft/yaag/middleware"
+	// "github.com/betacraft/yaag/yaag"
 	"github.com/betacraft/yaag/middleware"
 	"github.com/betacraft/yaag/yaag"
 	"github.com/gorilla/mux"
@@ -202,6 +204,12 @@ func (app *BeCoupleApp) SetupRouter() {
 	apiRouter.HandleFunc("/user/personalInfo",
 		WrapAPIResponseHeader(app.APICtrl.editPersonalInfo)).Methods("POST")
 
+	apiRouter.HandleFunc("/user/basicInfo",
+		WrapAPIResponseHeader(app.APICtrl.editBasicInfo)).Methods("POST")
+
+	apiRouter.HandleFunc("/upload",
+		WrapAPIResponseHeader(app.APICtrl.upload)).Methods("POST")
+
 	apiRouter.HandleFunc("/logout",
 		WrapAPIResponseHeader(app.APICtrl.logout)).Methods("POST")
 
@@ -227,6 +235,7 @@ func (app *BeCoupleApp) SetupMiddleware() http.Handler {
 	// TODO [PRODUCTION] remove yaag
 	yaag.Init(&yaag.Config{On: true, DocTitle: "Gorilla Mux", DocPath: "doc/apidoc.html"})
 	return middleware.Handle(stack)
+	//return stack
 }
 
 //SetupClientStore setups client store

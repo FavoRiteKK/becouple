@@ -283,7 +283,7 @@ func (u *User) MarshalJSON() ([]byte, error) {
 
 	var _dateOfBirth interface{}
 	if u.DateOfBirth.Valid {
-		_dateOfBirth = u.DateOfBirth.Time
+		_dateOfBirth = u.DateOfBirth.Time.Format("2006-01-02")
 	}
 
 	var _locked interface{}

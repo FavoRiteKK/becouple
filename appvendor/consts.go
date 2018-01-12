@@ -17,11 +17,16 @@ const (
 	ErrorTokenIssuedAt
 	ErrorTokenNotValidYet
 	ErrorRefreshTokenInvalid
+	ErrorRequestBodyTooLarge
 
 	PropPrimaryID    = "primaryID"
 	PropEmail        = authboss.StoreEmail
 	PropPassword     = authboss.StorePassword
 	PropFullName     = "fullname"
+	PropNickName     = "nickname"
+	PropDateOfBirth  = "date_of_birth"
+	PropGender       = "gender"
+	PropJob          = "job"
 	PropDeviceName   = "device_name"
 	PropConfirmToken = confirm.StoreConfirmToken
 	PropConfirmed    = confirm.StoreConfirmed
