@@ -8,15 +8,19 @@ import (
 	"github.com/volatiletech/authboss"
 )
 
+//IDBStorer db storer logic interface
 type IDBStorer interface {
 	SaveCredential(refreshToken, key, deviceName string) error
+	SavePhoto(name string, userID uint) error
 }
 
+//AuthStorer authentication storer
 type AuthStorer struct {
-	dbHelper DBManager
+	dbHelper IDBManager
 }
 
-func NewAuthStorer() *AuthStorer {
+//NewAuthStorer returns instance of AuthStorer
+func NewAuthStorer() IDBStorer {
 	// connect database first
 	if err := DBHelper.Connect(); err != nil {
 		logrus.WithError(err).Errorln("error connecting database")
@@ -26,6 +30,7 @@ func NewAuthStorer() *AuthStorer {
 	return &AuthStorer{DBHelper}
 }
 
+//Create creates/insert an user to db
 func (s AuthStorer) Create(_ string, attr authboss.Attributes) error {
 	user := xodb.NewLegalUser()
 	BindAuthbossUser(user, attr)
@@ -40,6 +45,7 @@ func (s AuthStorer) Create(_ string, attr authboss.Attributes) error {
 	return nil
 }
 
+//Put saves/update user
 func (s AuthStorer) Put(key string, attr authboss.Attributes) error {
 	user, err := s.dbHelper.GetUserByEmail(key)
 	if err != nil {
@@ -58,6 +64,7 @@ func (s AuthStorer) Put(key string, attr authboss.Attributes) error {
 	return nil
 }
 
+//Get returns user by key parameter
 func (s AuthStorer) Get(key string) (result interface{}, err error) {
 	user, err := s.dbHelper.GetUserByEmail(key)
 	if err != nil {
@@ -71,42 +78,52 @@ func (s AuthStorer) Get(key string) (result interface{}, err error) {
 	return user, nil
 }
 
+//PutOAuth creates/inserts user from uid and provider
 func (s AuthStorer) PutOAuth(uid, provider string, attr authboss.Attributes) error {
 	return s.Create(uid+provider, attr)
 }
 
+//GetOAuth returns user by uid and provider
 func (s AuthStorer) GetOAuth(uid, provider string) (result interface{}, err error) {
 	return nil, nil
 }
 
+//AddToken adds token to db
 func (s AuthStorer) AddToken(key, token string) error {
 	return nil
 }
 
+//DelTokens deletes token from db
 func (s AuthStorer) DelTokens(key string) error {
 	return nil
 }
 
+//UseToken uses token
 func (s AuthStorer) UseToken(givenKey, token string) error {
 	return authboss.ErrTokenNotFound
 }
 
+//ConfirmUser marks the user as confirmed (ex: his email is valid)
 func (s AuthStorer) ConfirmUser(tok string) (result interface{}, err error) {
 	return nil, authboss.ErrUserNotFound
 }
 
+//RecoverUser recovers user's password (ex: send an email with recovery code)
 func (s AuthStorer) RecoverUser(rec string) (result interface{}, err error) {
 	return nil, authboss.ErrUserNotFound
 }
 
+//DeleteUser marks user as deleted in db
 func (s AuthStorer) DeleteUser(user *xodb.User) error {
 	return s.dbHelper.DeleteUser(user)
 }
 
+//DeletePermanently permanently removes user form db
 func (s AuthStorer) DeletePermanently(user *xodb.User) error {
 	return s.dbHelper.DeletePermanently(user)
 }
 
+//SaveCredential saves credential with refresh token and key and device name
 func (s AuthStorer) SaveCredential(refreshToken, key, deviceName string) error {
 
 	credential := &xodb.Credential{
@@ -118,10 +135,21 @@ func (s AuthStorer) SaveCredential(refreshToken, key, deviceName string) error {
 	return s.dbHelper.SaveCredential(credential)
 }
 
+//GetCredentialByRefreshToken returns credential by refresh token and device name
 func (s AuthStorer) GetCredentialByRefreshToken(refreshToken string, deviceName string) (*xodb.Credential, error) {
 	cred, err := s.dbHelper.GetCredentialByRefreshToken(refreshToken, deviceName)
 	if err != nil {
 		logrus.WithError(err).Errorln("error with get credential method")
 	}
 	return cred, err
+}
+
+// SavePhoto saves user photo to db
+func (s AuthStorer) SavePhoto(name string, userID uint) error {
+	userPhoto := &xodb.UserPhoto{
+		PhotoURI: name,
+		UserID: userID,
+	}
+
+	return s.dbHelper.SaveUserPhoto(userPhoto)
 }

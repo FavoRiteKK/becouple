@@ -4,6 +4,7 @@
 package main
 
 import (
+	"fmt"
 	"becouple/appvendor"
 	"becouple/models"
 	"becouple/models/xodb"
@@ -14,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"md5"
 
 	jwtPkg "github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
@@ -562,7 +564,7 @@ const (
 )
 
 //http://sanatgersappa.blogspot.sg/2013/03/handling-multiple-file-uploads-in-go.html
-// if got error 'http: multipart handled by ParseMultipartForm', disable yaag middle in app.go
+// if got error 'http: multipart handled by ParseMultipartForm', disable yaag middleware in app.go
 // route '/api/upload'
 func (api *APIController) upload(w http.ResponseWriter, r *http.Request) {
 	// limit request body to 100MB
@@ -575,6 +577,12 @@ func (api *APIController) upload(w http.ResponseWriter, r *http.Request) {
 		appvendor.InternalServerError(w, err.Error())
 		return
 	}
+
+	// generate a md5 hash (current time)
+	crudtime := time.Now().Unix()
+	h := md5.New()
+	io.WriteString(h, strconv.FormatInt(crudtime, 10))
+	token := fmt.Sprintf("%x", h.Sum(nil))
 
 	logrus.Infoln("Copy part to ", _uploadDir)
 	//copy each part to destination.
@@ -596,7 +604,8 @@ func (api *APIController) upload(w http.ResponseWriter, r *http.Request) {
 		}
 
 		logrus.WithField("filename", part.FileName()).Infoln("Create copy of uploaded file")
-		dst, err := os.Create(_uploadDir + part.FileName())
+		filename := fmt.Sprintf("%v_%v", token, part.FileName())
+		dst, err := os.Create(_uploadDir + filename)
 		defer dst.Close()
 
 		if err != nil {
@@ -611,14 +620,21 @@ func (api *APIController) upload(w http.ResponseWriter, r *http.Request) {
 				json.NewEncoder(w).Encode(&models.ServerResponse{
 					Success: false,
 					ErrCode: appvendor.ErrorRequestBodyTooLarge,
-					Err:     "http: request body too large",
+					Err:     err.Error(),
 				})
 			} else {
 				appvendor.InternalServerError(w, err.Error())
 			}
 			return
 		}
+
+		//TODO save the photo to db
+		api.app.Storer.
 	}
 	//display success message
 	logrus.Infoln("Upload process successes")
+	json.NewEncoder(w).Encode(&models.ServerResponse{
+		Success: true,
+	})
+
 }

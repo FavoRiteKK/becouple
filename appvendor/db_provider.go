@@ -6,10 +6,11 @@ import (
 	"errors"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql"	// init mysql driver
 )
 
-type DBManager interface {
+//IDBManager describes db manager interface
+type IDBManager interface {
 	Connect() error
 	HasConn() (bool, error)
 
@@ -23,13 +24,15 @@ type DBManager interface {
 
 	SaveCredential(credential *xodb.Credential) error
 	GetCredentialByRefreshToken(refreshToken string, deviceName string) (*xodb.Credential, error)
+	SaveUserPhoto(photo *xodb.UserPhoto) error
 }
 
 type manager struct {
 	db *sql.DB
 }
 
-var DBHelper DBManager = new(manager)
+//DBHelper an instance of db helper
+var DBHelper IDBManager = new(manager)
 
 func (mgr *manager) Connect() error {
 
@@ -127,4 +130,12 @@ func (mgr *manager) GetCredentialByRefreshToken(refreshToken string, deviceName 
 	}
 
 	return xodb.CredentialByRefreshToken(mgr.db, refreshToken, deviceName)
+}
+
+func (mgr *manager) SaveUserPhoto(photo *xodb.UserPhoto) error {
+	if ok, err := mgr.HasConn(); !ok {
+		return err
+	}
+
+	return photo.Save(mgr.db)
 }

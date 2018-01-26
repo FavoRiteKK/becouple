@@ -36,13 +36,13 @@ func (s NullStatus) String() string {
 		enumVal = ""
 
 	case StatusSingle:
-		enumVal = "single"
+		enumVal = "Single"
 
 	case StatusDivorce:
-		enumVal = "divorce"
+		enumVal = "Divorce"
 
 	case StatusComplicate:
-		enumVal = "complicate"
+		enumVal = "Complicate"
 	}
 
 	return enumVal
@@ -59,13 +59,13 @@ func (s *NullStatus) UnmarshalText(text []byte) error {
 	case "":
 		*s = StatusNil
 
-	case "single":
+	case "Single":
 		*s = StatusSingle
 
-	case "divorce":
+	case "Divorce":
 		*s = StatusDivorce
 
-	case "complicate":
+	case "Complicate":
 		*s = StatusComplicate
 
 	default:

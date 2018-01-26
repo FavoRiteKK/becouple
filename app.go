@@ -15,8 +15,7 @@ import (
 
 	// "github.com/betacraft/yaag/middleware"
 	// "github.com/betacraft/yaag/yaag"
-	"github.com/betacraft/yaag/middleware"
-	"github.com/betacraft/yaag/yaag"
+
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
@@ -233,9 +232,9 @@ func (app *BeCoupleApp) SetupMiddleware() http.Handler {
 		app.Ab.ExpireMiddleware).Then(app.Router)
 
 	// TODO [PRODUCTION] remove yaag
-	yaag.Init(&yaag.Config{On: true, DocTitle: "Gorilla Mux", DocPath: "doc/apidoc.html"})
-	return middleware.Handle(stack)
-	//return stack
+	//yaag.Init(&yaag.Config{On: true, DocTitle: "Gorilla Mux", DocPath: "doc/apidoc.html"})
+	//return middleware.Handle(stack)
+	return stack
 }
 
 //SetupClientStore setups client store
