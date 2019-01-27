@@ -1,0 +1,94 @@
+@startuml
+
+package main {
+	class BeCoupleApp {
+		WebCtrl *WebController
+		APICtrl *APIController
+		Router  *mux.Router
+		Ab      *authboss.Authboss
+		Storer  *appvendor.AuthStorer
+	}
+
+	class WebController {
+		-app *BeCoupleApp
+	}
+	class APIController {
+		-app *BeCoupleApp
+	}
+	interface IDBManager {
+		Connect() error
+		HasConn() (bool, error)
+
+		Insert(user *xodb.User) error
+		GetUserByEmail(email string) (*xodb.User, error)
+
+		SaveUser(user *xodb.User) error
+
+		DeleteUser(user *xodb.User) error
+		DeletePermanently(user *xodb.User) error
+
+		SaveCredential(credential *xodb.Credential) error
+		GetCredentialByRefreshToken(refreshToken string, deviceName string) (*xodb.Credential, error)
+		SaveUserPhoto(photo *xodb.UserPhoto) error
+	}
+}
+package mux {
+	class Router
+}
+package authboss {
+	interface Storer {
+		Put(key string, attr Attributes) error
+		Get(key string) (interface{}, error)
+	}
+	interface OAuth2Storer {
+		PutOAuth(uid, provider string, attr Attributes) error
+		GetOAuth(uid, provider string) (interface{}, error)
+	}
+	class Authboss
+
+}
+package sql {
+	class DB
+}
+package appvendor {
+	interface IDBManager {
+		Connect() error
+		HasConn() (bool, error)
+
+		Insert(user *xodb.User) error
+		GetUserByEmail(email string) (*xodb.User, error)
+
+		SaveUser(user *xodb.User) error
+
+		DeleteUser(user *xodb.User) error
+		DeletePermanently(user *xodb.User) error
+
+		SaveCredential(credential *xodb.Credential) error
+		GetCredentialByRefreshToken(refreshToken string, deviceName string) (*xodb.Credential, error)
+		SaveUserPhoto(photo *xodb.UserPhoto) error
+	}
+	class  manager {
+		db *sql.DB
+	}
+	interface IDBStorer {
+		SaveCredential(refreshToken, key, deviceName string) error
+		SavePhoto(name string, userID uint) error
+	}
+	class AuthStorer {
+		-dbHelper IDBManager
+	}
+	
+	AuthStorer --|> IDBStorer
+	AuthStorer --|> Storer
+	AuthStorer --|> OAuth2Storer
+	
+	manager --|> IDBManager
+	manager --> DB
+}
+
+BeCoupleApp -- WebController
+BeCoupleApp -- APIController
+BeCoupleApp --> AuthStorer
+
+
+@enduml

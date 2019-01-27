@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"md5"
+	"crypto/md5"
 
 	jwtPkg "github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
@@ -559,7 +559,7 @@ func (api *APIController) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 const (
-	_uploadDir           string = "/home/khiemnv/Pictures/_goupload/"
+	_uploadDir           string = "/home/khiemnv/Pictures/_goupload/	//TODO should change when go live"
 	_maxBytesRequestBody int64  = 100 * 1024 * 1024
 )
 

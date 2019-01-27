@@ -232,7 +232,7 @@ func (app *BeCoupleApp) SetupMiddleware() http.Handler {
 		app.Ab.ExpireMiddleware).Then(app.Router)
 
 	// TODO [PRODUCTION] remove yaag
-	//yaag.Init(&yaag.Config{On: true, DocTitle: "Gorilla Mux", DocPath: "doc/apidoc.html"})
+	//yaag.Init(&yaag.Config{On: true, DocTitle: "Gorilla Mux", DocPath: "design/doc/apidoc.html"})
 	//return middleware.Handle(stack)
 	return stack
 }
