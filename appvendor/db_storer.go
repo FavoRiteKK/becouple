@@ -20,7 +20,7 @@ type AuthStorer struct {
 }
 
 //NewAuthStorer returns instance of AuthStorer
-func NewAuthStorer() IDBStorer {
+func NewAuthStorer() *AuthStorer {
 	dbHelper := new(manager)
 	// connect database first
 	if err := dbHelper.Connect(); err != nil {

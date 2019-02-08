@@ -4,18 +4,18 @@
 package main
 
 import (
-	"fmt"
 	"becouple/appvendor"
 	"becouple/models"
 	"becouple/models/xodb"
+	"crypto/md5"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-	"crypto/md5"
 
 	jwtPkg "github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
@@ -629,7 +629,7 @@ func (api *APIController) upload(w http.ResponseWriter, r *http.Request) {
 		}
 
 		//TODO save the photo to db
-		api.app.Storer.
+		//	api.app.Storer.
 	}
 	//display success message
 	logrus.Infoln("Upload process successes")

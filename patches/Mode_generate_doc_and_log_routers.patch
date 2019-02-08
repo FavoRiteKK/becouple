@@ -1,0 +1,88 @@
+diff --git a/app.go b/app.go
+index a419b2b..d073dab 100644
+--- a/app.go
++++ b/app.go
+@@ -13,8 +13,8 @@ import (
+ 	"path/filepath"
+ 	"regexp"
+ 
+-	// "github.com/betacraft/yaag/middleware"
+-	// "github.com/betacraft/yaag/yaag"
++	"github.com/betacraft/yaag/middleware"
++	"github.com/betacraft/yaag/yaag"
+ 
+ 	"github.com/gorilla/mux"
+ 	"github.com/gorilla/securecookie"
+@@ -233,9 +233,9 @@ func (app *BeCoupleApp) SetupMiddleware() http.Handler {
+ 		app.Ab.ExpireMiddleware).Then(app.Router)
+ 
+ 	// TODO [PRODUCTION] remove yaag
+-	//yaag.Init(&yaag.Config{On: true, DocTitle: "Gorilla Mux", DocPath: "design/doc/apidoc.html"})
+-	//return middleware.Handle(stack)
+-	return stack
++	yaag.Init(&yaag.Config{On: true, DocTitle: "Gorilla Mux", DocPath: "design/doc/apidoc.html"})
++	return middleware.Handle(stack)
++	//return stack
+ }
+ 
+ //SetupClientStore setups client store
+diff --git a/main.go b/main.go
+index c15e6d2..f47d3c3 100644
+--- a/main.go
++++ b/main.go
+@@ -6,8 +6,10 @@ import (
+ 	"log"
+ 	"net/http"
+ 	"os"
++	"strings"
+ 	"time"
+ 
++	"github.com/gorilla/mux"
+ 	_ "github.com/volatiletech/authboss/auth"
+ 	_ "github.com/volatiletech/authboss/confirm"
+ 	_ "github.com/volatiletech/authboss/lock"
+@@ -37,25 +39,25 @@ func main() {
+ 	app := NewApp("http://" + addr)
+ 
+ 	// debug, list routes
+-	//router := app.router
+-	//router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+-	//	t, err := route.GetPathTemplate()
+-	//	if err != nil {
+-	//		return err
+-	//	}
+-	//	// p will contain regular expression is compatible with regular expression in Perl, Python, and other languages.
+-	//	// for instance the regular expression for path '/articles/{id}' will be '^/articles/(?P<v0>[^/]+)$'
+-	//	p, err := route.GetPathRegexp()
+-	//	if err != nil {
+-	//		return err
+-	//	}
+-	//	m, err := route.GetMethods()
+-	//	if err != nil {
+-	//		return err
+-	//	}
+-	//	fmt.Println(strings.Join(m, ","), t, p)
+-	//	return nil
+-	//})
++	router := app.Router
++	router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
++		t, err := route.GetPathTemplate()
++		if err != nil {
++			return err
++		}
++		// p will contain regular expression is compatible with regular expression in Perl, Python, and other languages.
++		// for instance the regular expression for path '/articles/{id}' will be '^/articles/(?P<v0>[^/]+)$'
++		p, err := route.GetPathRegexp()
++		if err != nil {
++			return err
++		}
++		m, err := route.GetMethods()
++		if err != nil {
++			return err
++		}
++		fmt.Println(strings.Join(m, ","), t, p)
++		return nil
++	})
+ 
+ 	// Start the server
+ 	log.Println(http.ListenAndServe(addr, app.SetupMiddleware()))

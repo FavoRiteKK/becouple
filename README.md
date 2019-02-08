@@ -24,4 +24,4 @@ A MVP project developed with Go. The purpose is to enhance my CV
 # Build server
 * enter $ go build
 # test
-* enter ex: $ go test -run ^TestApiRegisterNew$
+* enter for example: $ go test -run ^TestApiRegisterNew$

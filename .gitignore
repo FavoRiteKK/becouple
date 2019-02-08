@@ -3,5 +3,6 @@ vendor/
 becouple
 .vscode/
 *.bak
+*.png
 /debug
 /debug.test
