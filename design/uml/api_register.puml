@@ -1,0 +1,63 @@
+@startuml
+autonumber
+
+[-> Handler : /api/register
+Handler -> logger : ServeHTTP(writer, request)
+logger -> noresourceMiddleware : ServeHTTP(writer, request)
+alt request matches with registered paths
+	noresourceMiddleware -> nosurfing : ServeHTTP(writer, request)
+
+	alt request not has "/api"
+		nosurfing -> nosurfing : check csrf token
+	end
+	
+	nosurfing -> jwtMiddleware : ServeHTTP(writer, request)
+	alt has "/api" but not in "/api/auth;/api/register;/api/confirm;/api/refreshToken"
+		jwtMiddleware -> jwtMiddleware : check JWT token
+	end
+
+	jwtMiddleware -> authboss.ExpireMiddleware : ServeHTTP(writer, request)
+	authboss.ExpireMiddleware -> Router : ServeHTTP(writer, request)
+	Router -> APIController : register(writer, request)
+	APIController -> APIController : validate email, password, fullname
+	APIController -> APIController : check if user with email already existed
+	alt validate PASS and new user
+		APIController -> APIController : hashes password with bcrypt
+		APIController -> APIController : creates attributes object of email, hashed password, fullname
+
+		participant AuthStorer << Storer >>
+		APIController -> AuthStorer : Create(_, attributes))
+		
+		create entity User
+		AuthStorer -> User : new
+		AuthStorer -> AuthStorer : bind user and attributes
+		AuthStorer -> manager : Insert(user)
+		alt has db connection
+			manager -> User : Save(manager.db)
+			
+			create database xodb
+			User -> xodb : Exec(query)
+			User <- xodb : return error
+
+			manager <- User : return error
+		end
+		AuthStorer <- manager : return error
+
+		APIController <- AuthStorer : return error
+
+		alt error is nil
+			APIController -> authboss : FireAfter(EventRegister)
+		end
+
+		note over APIController
+			Successful
+		end note
+	else validate FAIL or user already existed
+		APIController ->x] : return error
+	end
+
+else request not registered
+	noresourceMiddleware ->x http.NotFoundHandler : false
+end
+
+@enduml

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"	// init mysql driver
+	_ "github.com/go-sql-driver/mysql" // init mysql driver
 )
 
 //IDBManager describes db manager interface
@@ -30,9 +30,6 @@ type IDBManager interface {
 type manager struct {
 	db *sql.DB
 }
-
-//DBHelper an instance of db helper
-var DBHelper IDBManager = new(manager)
 
 func (mgr *manager) Connect() error {
 

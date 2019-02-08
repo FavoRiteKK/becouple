@@ -21,13 +21,14 @@ type AuthStorer struct {
 
 //NewAuthStorer returns instance of AuthStorer
 func NewAuthStorer() IDBStorer {
+	dbHelper := new(manager)
 	// connect database first
-	if err := DBHelper.Connect(); err != nil {
+	if err := dbHelper.Connect(); err != nil {
 		logrus.WithError(err).Errorln("error connecting database")
 	}
 
 	// then instantiate our store object
-	return &AuthStorer{DBHelper}
+	return &AuthStorer{dbHelper}
 }
 
 //Create creates/insert an user to db
@@ -148,7 +149,7 @@ func (s AuthStorer) GetCredentialByRefreshToken(refreshToken string, deviceName 
 func (s AuthStorer) SavePhoto(name string, userID uint) error {
 	userPhoto := &xodb.UserPhoto{
 		PhotoURI: name,
-		UserID: userID,
+		UserID:   userID,
 	}
 
 	return s.dbHelper.SaveUserPhoto(userPhoto)

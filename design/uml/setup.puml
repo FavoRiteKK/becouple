@@ -1,0 +1,66 @@
+@startuml
+
+participant main as M
+
+create BeCoupleApp as B
+activate M
+M -> B : NewApp(address)
+
+activate B
+note over B
+	log filename and line number
+	log xodb (SQL) query
+end note
+
+create AuthStorer
+B -> AuthStorer : new
+
+create database manager
+AuthStorer -> manager : new
+
+create WebController
+B -> WebController : new
+
+create APIController
+B -> APIController : new
+APIController -> APIController : setup validators
+
+create Authboss
+B -> Authboss : new(address)
+
+create Router
+B -> Router : new
+note over Router
+	route APIs with path /api
+	route Webs with path /
+end note
+
+B -> B : SetupClientStore
+B -> M : return app
+
+deactivate B
+
+M -> B : SetupMiddlewares
+
+activate B
+
+create Handler
+B -> Handler : new
+
+create collections middlewares
+Handler -> middlewares : chains
+note over middlewares
+	logger
+	noresourceMiddleware(Router)
+	nosurfing("/api")
+	jwtMiddleware
+	ExpireMiddleware
+	Router
+end note
+
+M <- B : return http.Handler
+
+deactivate B
+
+M -> M : ListenAndServe(address, handler)
+@enduml

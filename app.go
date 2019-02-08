@@ -72,6 +72,7 @@ func NewApp(authbossRootURL string) *BeCoupleApp {
 
 // BeforeSetup : entrance before app's components setup
 func (app *BeCoupleApp) BeforeSetup() {
+	// log filename and line number
 	logrus.AddHook(filename.NewHook())
 	xodb.XOLog = func(query string, params ...interface{}) {
 		logrus.WithFields(logrus.Fields{
@@ -129,7 +130,7 @@ func (app *BeCoupleApp) SetupAuthBoss(rootURL string) {
 	ab.CookieStoreMaker = appvendor.NewCookieStorer
 	ab.SessionStoreMaker = appvendor.NewSessionStorer
 
-	ab.EmailFrom = "khiemnv@rikkeisoft.com"
+	ab.EmailFrom = "vankhiem583@gmail.com"
 
 	//TODO [production] change to SMTPMailer in
 	ab.Mailer = authboss.LogMailer(os.Stdout)

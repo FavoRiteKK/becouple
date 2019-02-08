@@ -8,29 +8,16 @@ package main {
 		Ab      *authboss.Authboss
 		Storer  *appvendor.AuthStorer
 	}
-
 	class WebController {
 		-app *BeCoupleApp
 	}
 	class APIController {
 		-app *BeCoupleApp
 	}
-	interface IDBManager {
-		Connect() error
-		HasConn() (bool, error)
 
-		Insert(user *xodb.User) error
-		GetUserByEmail(email string) (*xodb.User, error)
+	APIController --* BeCoupleApp
+	WebController --* BeCoupleApp
 
-		SaveUser(user *xodb.User) error
-
-		DeleteUser(user *xodb.User) error
-		DeletePermanently(user *xodb.User) error
-
-		SaveCredential(credential *xodb.Credential) error
-		GetCredentialByRefreshToken(refreshToken string, deviceName string) (*xodb.Credential, error)
-		SaveUserPhoto(photo *xodb.UserPhoto) error
-	}
 }
 package mux {
 	class Router
@@ -40,12 +27,16 @@ package authboss {
 		Put(key string, attr Attributes) error
 		Get(key string) (interface{}, error)
 	}
+	interface RegisterStorer {
+		Create(key string, attr authboss.Attributes) error
+	}
 	interface OAuth2Storer {
 		PutOAuth(uid, provider string, attr Attributes) error
 		GetOAuth(uid, provider string) (interface{}, error)
 	}
 	class Authboss
 
+	Storer <|-- RegisterStorer
 }
 package sql {
 	class DB
@@ -78,17 +69,16 @@ package appvendor {
 		-dbHelper IDBManager
 	}
 	
-	AuthStorer --|> IDBStorer
-	AuthStorer --|> Storer
-	AuthStorer --|> OAuth2Storer
-	
-	manager --|> IDBManager
-	manager --> DB
+	IDBStorer <|-- AuthStorer
+	RegisterStorer <|-- AuthStorer
+	OAuth2Storer <|-- AuthStorer
+	IDBManager -* AuthStorer
+	IDBManager <|-- manager
+	manager *- DB
 }
 
-BeCoupleApp -- WebController
-BeCoupleApp -- APIController
-BeCoupleApp --> AuthStorer
-
+Router --* BeCoupleApp
+BeCoupleApp *-- Authboss
+AuthStorer --* BeCoupleApp
 
 @enduml
