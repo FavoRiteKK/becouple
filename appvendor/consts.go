@@ -20,6 +20,7 @@ const (
 	ErrorRequestBodyTooLarge
 
 	PropPrimaryID    = "primaryID"
+	PropUserID       = "userID"
 	PropEmail        = authboss.StoreEmail
 	PropPassword     = authboss.StorePassword
 	PropFullName     = "fullname"

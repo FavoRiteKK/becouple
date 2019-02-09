@@ -62,8 +62,13 @@ package appvendor {
 		db *sql.DB
 	}
 	interface IDBStorer {
-		SaveCredential(refreshToken, key, deviceName string) error
-		SavePhoto(name string, userID uint) error
+		SaveCredential(refreshToken string, userID uint, deviceName string) error
+		SavePhoto(uri string, userID uint) error
+		SaveUser(userID string, attr authboss.Attributes) error
+		DeleteUser(user *xodb.User) error
+		DeletePermanently(user *xodb.User) error
+		GetCredentialByRefreshToken(refreshToken string, deviceName string) (*xodb.Credential, error)
+		GetUserByID(userID uint) (*xodb.User, error)
 	}
 	class AuthStorer {
 		-dbHelper IDBManager

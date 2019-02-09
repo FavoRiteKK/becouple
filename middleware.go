@@ -215,7 +215,15 @@ func (jwt *JwtAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		appvendor.InternalServerError(w, "the claims should have attribute 'Id' of string")
 	}
 
+	userID, ok := claims["userID"].(string)
+	if !ok {
+		appvendor.InternalServerError(w, "the claims should have attribute 'userID' of uint")
+	} else if userID == "" {
+		appvendor.InternalServerError(w, "the claims should have attribute 'userID' of string")
+	}
+
 	r.Header.Set(appvendor.PropPrimaryID, key)
+	r.Header.Set(appvendor.PropUserID, fmt.Sprint(userID))
 
 	// serve next
 	jwt.next.ServeHTTP(w, r)

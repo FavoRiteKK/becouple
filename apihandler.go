@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -95,13 +96,15 @@ func NewAPIController(app *BeCoupleApp) *APIController {
 	return api
 }
 
-func generateAccessToken(key string) (string, error) {
+func generateAccessToken(key string, userID uint) (string, error) {
 	expireAt := time.Now().Add(expDuration).Unix()
+	sUID := fmt.Sprint(userID)
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain.
 	mcl := jwtPkg.MapClaims{
-		"Id":  key,
-		"exp": expireAt,
+		"Id":     key,
+		"userID": sUID,
+		"exp":    expireAt,
 		//TODO [production] may change these when go live
 	}
 
@@ -258,7 +261,7 @@ func (api *APIController) confirm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create access token
-	tokenString, err := generateAccessToken(key)
+	tokenString, err := generateAccessToken(key, user.UserID)
 	if err != nil {
 		appvendor.InternalServerError(w, err.Error())
 		return
@@ -271,7 +274,7 @@ func (api *APIController) confirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// save refresh token
-	api.app.Storer.SaveCredential(refreshToken, key, deviceName)
+	api.app.Storer.SaveCredential(refreshToken, user.UserID, deviceName)
 
 	response.Data[appvendor.JFieldToken] = tokenString
 	response.Data[appvendor.JFieldRefreshToken] = refreshToken
@@ -341,7 +344,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create access token
-	tokenString, err := generateAccessToken(key)
+	tokenString, err := generateAccessToken(key, user.UserID)
 	if err != nil {
 		appvendor.InternalServerError(w, err.Error())
 		return
@@ -355,7 +358,7 @@ func (api *APIController) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// save refresh token
-	api.app.Storer.SaveCredential(refreshToken, key, deviceName)
+	api.app.Storer.SaveCredential(refreshToken, user.UserID, deviceName)
 
 	response.Data[appvendor.JFieldToken] = tokenString
 	response.Data[appvendor.JFieldRefreshToken] = refreshToken
@@ -406,19 +409,6 @@ func (api *APIController) editPersonalInfo(w http.ResponseWriter, r *http.Reques
 	weight := strings.TrimSpace(r.FormValue(appvendor.PropWeight))
 	height := strings.TrimSpace(r.FormValue(appvendor.PropHeight))
 
-	// get user from storer and check if exists
-	obj, err := api.app.Storer.Get(key)
-	if err != nil {
-		appvendor.InternalServerError(w, "Cannot retrieve user from store")
-		return
-	}
-
-	_, ok := obj.(*xodb.User)
-	if !ok {
-		appvendor.InternalServerError(w, "Storer should returns a type AuthUser")
-		return
-	}
-
 	// update user
 	attr := authboss.Attributes{}
 	attr[appvendor.PropShortAbout] = shortAbout
@@ -453,25 +443,12 @@ func (api *APIController) editPersonalInfo(w http.ResponseWriter, r *http.Reques
 // route '/api/user/basicInfo' params: fullname, nickname, birthday, gender, job
 func (api *APIController) editBasicInfo(w http.ResponseWriter, r *http.Request) {
 
-	key := r.Header.Get(appvendor.PropPrimaryID)
+	key := r.Header.Get(appvendor.PropEmail)
 	fullname := strings.TrimSpace(r.FormValue(appvendor.PropFullName))
 	nickname := strings.TrimSpace(r.FormValue(appvendor.PropNickName))
 	birthDay := strings.TrimSpace(r.FormValue(appvendor.PropDateOfBirth))
 	gender := r.FormValue(appvendor.PropGender)
 	job := strings.TrimSpace(r.FormValue(appvendor.PropJob))
-
-	// get user from storer and check if exists
-	obj, err := api.app.Storer.Get(key)
-	if err != nil {
-		appvendor.InternalServerError(w, "Cannot retrieve user from store")
-		return
-	}
-
-	_, ok := obj.(*xodb.User)
-	if !ok {
-		appvendor.InternalServerError(w, "Storer should returns a type AuthUser")
-		return
-	}
 
 	// update user
 	attr := authboss.Attributes{}
@@ -513,7 +490,7 @@ func (api *APIController) refreshToken(w http.ResponseWriter, r *http.Request) {
 	deviceName := r.FormValue(appvendor.PropDeviceName)
 
 	// find credential in db
-	cred, err := api.app.Storer.GetCredentialByRefreshToken(refreshToken, deviceName)
+	_, err := api.app.Storer.GetCredentialByRefreshToken(refreshToken, deviceName)
 	if err != nil {
 		response.ErrCode = appvendor.ErrorRefreshTokenInvalid
 		response.Err = "Invalid refresh token and/or device name"
@@ -521,8 +498,11 @@ func (api *APIController) refreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	key := r.Header.Get(appvendor.PropEmail)
+	sUID := r.Header.Get(appvendor.PropUserID)
+	userID, _ := strconv.ParseUint(sUID, 10, 0)
 	// refresh access token
-	tokenString, err := generateAccessToken(cred.Email)
+	tokenString, err := generateAccessToken(key, uint(userID))
 	if err != nil {
 		appvendor.InternalServerError(w, err.Error())
 		return
@@ -559,15 +539,14 @@ func (api *APIController) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 const (
-	_uploadDir           string = "/home/khiemnv/Pictures/_goupload/	//TODO should change when go live"
-	_maxBytesRequestBody int64  = 100 * 1024 * 1024
+	_uploadDir           string = "/Users/kenvinfavo/Pictures/" //TODO should change when go live"
+	_maxBytesRequestBody int64  = 25 * 1024 * 1024
 )
 
-//http://sanatgersappa.blogspot.sg/2013/03/handling-multiple-file-uploads-in-go.html
 // if got error 'http: multipart handled by ParseMultipartForm', disable yaag middleware in app.go
 // route '/api/upload'
 func (api *APIController) upload(w http.ResponseWriter, r *http.Request) {
-	// limit request body to 100MB
+	// limit request body to 25Mb
 	r.Body = http.MaxBytesReader(w, r.Body, _maxBytesRequestBody)
 
 	//get the multipart reader for the request.
@@ -585,13 +564,20 @@ func (api *APIController) upload(w http.ResponseWriter, r *http.Request) {
 	token := fmt.Sprintf("%x", h.Sum(nil))
 
 	logrus.Infoln("Copy part to ", _uploadDir)
-	//copy each part to destination.
+	//copy each part to destination
 	count := 0
+
+	sUID := r.Header.Get(appvendor.PropUserID)
+	userID, _ := strconv.ParseUint(sUID, 10, 0)
 
 	for {
 		part, err := reader.NextPart()
 		if err == io.EOF {
 			break
+		}
+		if err != nil {
+			appvendor.InternalServerError(w, err.Error())
+			return
 		}
 
 		count++
@@ -604,8 +590,8 @@ func (api *APIController) upload(w http.ResponseWriter, r *http.Request) {
 		}
 
 		logrus.WithField("filename", part.FileName()).Infoln("Create copy of uploaded file")
-		filename := fmt.Sprintf("%v_%v", token, part.FileName())
-		dst, err := os.Create(_uploadDir + filename)
+		filePath := filepath.Join(_uploadDir, fmt.Sprintf("%v_%v", token, part.FileName()))
+		dst, err := os.Create(filePath)
 		defer dst.Close()
 
 		if err != nil {
@@ -628,8 +614,12 @@ func (api *APIController) upload(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		//TODO save the photo to db
-		//	api.app.Storer.
+		logrus.Infoln("Save file to database")
+		// if error occurs, prevent further file upload operation
+		if err := api.app.Storer.SavePhoto(filePath, uint(userID)); err != nil {
+			appvendor.InternalServerError(w, err.Error())
+			return
+		}
 	}
 	//display success message
 	logrus.Infoln("Upload process successes")

@@ -7,9 +7,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/volatiletech/authboss"
@@ -23,8 +27,8 @@ func TestApiRegisterExist(t *testing.T) {
 	vals := url.Values{}
 
 	// test data: already exist
-	email := "zeratul@heroes.com"
-	pass := "qwe123"
+	email := "qwe@gmail.com"
+	pass := "qweasd"
 	fullName := "notimportant"
 	vals.Set(appvendor.PropPrimaryID, email)
 	vals.Set(appvendor.PropPassword, pass)
@@ -115,39 +119,19 @@ func TestApiConfirmUser(t *testing.T) {
 	w := httptest.NewRecorder()
 	vals := url.Values{}
 
-	// login user first
-	vals.Set(appvendor.PropPrimaryID, "qwe@gmail.com")
-	vals.Set(appvendor.PropPassword, "qweasd")
-
-	r, _ := http.NewRequest("POST", "/api/auth", bytes.NewBufferString(vals.Encode()))
-	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	h.ServeHTTP(w, r)
-
-	// to retrieve jwt token
-	result := new(models.ServerResponse)
-	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
-		t.Error("It should response with proper type ServerResponse, compare above")
-	}
-
-	//if result.Data == "" {
-	//	t.Error("It should return jwt token, but got ", result.Err)
-	//}
-
 	// process confirm function test
-	vals = url.Values{}
 	vals.Set(appvendor.PropPrimaryID, "qwe@gmail.com")
 	vals.Set(appvendor.PropPassword, "qweasd")
-	vals.Set(appvendor.PropConfirmToken, "VOEMEJ")
+	vals.Set(appvendor.PropConfirmToken, "CXCUTQ")
+	vals.Set(appvendor.PropDeviceName, "Lenovo P1ma40")
 
-	w = httptest.NewRecorder()
-	r, _ = http.NewRequest("POST", "/api/confirm", bytes.NewBufferString(vals.Encode()))
+	r, _ := http.NewRequest("POST", "/api/confirm", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	//r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", result.Jwt))
 
 	h.ServeHTTP(w, r)
 	t.Logf("/confirm response: %v %v", w.Code, w.Body.String())
 
+	result := new(models.ServerResponse)
 	// test result
 	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
 		t.Error("Body response is malformed, compare above.")
@@ -164,9 +148,10 @@ func TestApiAuthenticateWrong(t *testing.T) {
 	w := httptest.NewRecorder()
 	vals := url.Values{}
 
-	email := "zeratul@heroes.com"
+	email := "qwe@gmail.com"
 	vals.Set(appvendor.PropPrimaryID, email)
 	vals.Set(appvendor.PropPassword, "qweasd123") // wrong password
+	vals.Set(appvendor.PropDeviceName, "Lenovo P1ma40")
 
 	r, _ := http.NewRequest("POST", "/api/auth", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -186,7 +171,7 @@ func TestApiAuthenticateWrong(t *testing.T) {
 	//	t.Error("It should be failed (the password parameter is wrong):", result.Success)
 	//}
 
-	if result.Data[appvendor.JFieldToken] != "" {
+	if result.Data[appvendor.JFieldToken] != nil {
 		t.Error("It should be empty jwt:", result.Data[appvendor.JFieldToken])
 	}
 
@@ -204,6 +189,7 @@ func TestApiAuthenticateSuccess(t *testing.T) {
 
 	vals.Set(appvendor.PropPrimaryID, "qwe@gmail.com")
 	vals.Set(appvendor.PropPassword, "qweasd")
+	vals.Set(appvendor.PropDeviceName, "Lenovo P1ma40")
 
 	r, _ := http.NewRequest("POST", "/api/auth", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -262,6 +248,11 @@ func TestApiGetProfile(t *testing.T) {
 	t.Logf("/user/getprofile response: %v, %v", w.Code, w.Body.String())
 
 	// test result
+	userID := r.Header.Get(appvendor.PropUserID)
+	if userID == "" {
+		t.Error("the request Header should have attribute 'userID' of string")
+	}
+
 	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
 		t.Error("Body response is malformed, compare above.")
 	}
@@ -362,7 +353,8 @@ func TestApiLogout(t *testing.T) {
 	// login user first
 	email := "qwe@gmail.com"
 	vals.Set(appvendor.PropPrimaryID, email)
-	vals.Set(appvendor.PropPassword, "qwe123")
+	vals.Set(appvendor.PropPassword, "qweasd")
+	vals.Set(appvendor.PropDeviceName, "Lenovo P1ma40")
 
 	r, _ := http.NewRequest("POST", "/api/auth", bytes.NewBufferString(vals.Encode()))
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -376,10 +368,6 @@ func TestApiLogout(t *testing.T) {
 		t.Error("It should response with proper type ServerResponse, compare above")
 	}
 
-	//if result.Jwt == "" {
-	//t.Error("It should return jwt token, but got ", result.Err)
-	//}
-
 	// process logout function test
 	w = httptest.NewRecorder()
 	r, _ = http.NewRequest("POST", "/api/logout", nil)
@@ -391,5 +379,75 @@ func TestApiLogout(t *testing.T) {
 	// test result
 	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
 		t.Error("Body response is malformed, compare above.")
+	}
+}
+
+func newfileUploadRequest(uri string, paramName, path string) (*http.Request, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	filename := filepath.Base(path)
+
+	body := new(bytes.Buffer)
+	writer := multipart.NewWriter(body)
+	defer writer.Close()
+
+	part, err := writer.CreateFormFile(paramName, filename)
+	if err != nil {
+		return nil, err
+	}
+	_, err = io.Copy(part, file)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", uri, body)
+	req.Header.Add("Content-Type", writer.FormDataContentType())
+	return req, err
+}
+
+func TestApiUpload(t *testing.T) {
+	h := app.SetupMiddleware()
+
+	w := httptest.NewRecorder()
+	vals := url.Values{}
+
+	// login user first
+	vals.Set(appvendor.PropPrimaryID, "qwe@gmail.com")
+	vals.Set(appvendor.PropPassword, "qweasd")
+
+	r, _ := http.NewRequest("POST", "/api/auth", bytes.NewBufferString(vals.Encode()))
+	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	h.ServeHTTP(w, r)
+	t.Logf("/auth response: %v, %v", w.Code, w.Body.String())
+
+	// to retrieve jwt token
+	result := new(models.ServerResponse)
+	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
+		t.Error("It should response with proper type ServerResponse, compare above")
+	}
+
+	w = httptest.NewRecorder()
+	r, err := newfileUploadRequest("/api/upload", "file", "./design/uml/api_register.png")
+	if err != nil {
+		t.Error("Cannot create upload request")
+	}
+
+	r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", result.Data[appvendor.JFieldToken]))
+
+	h.ServeHTTP(w, r)
+	t.Logf("/upload  response: %v, %v", w.Code, w.Body.String())
+
+	// test result
+	if err := json.NewDecoder(w.Body).Decode(result); err != nil {
+		t.Error("It should response with proper type ServerResponse, compare above")
+	}
+
+	if result.Success != true {
+		t.Error("upload function seems malfunctioned")
 	}
 }

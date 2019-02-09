@@ -10,8 +10,12 @@ import (
 
 //IDBStorer db storer logic interface
 type IDBStorer interface {
-	SaveCredential(refreshToken, key, deviceName string) error
-	SavePhoto(name string, userID uint) error
+	SaveCredential(refreshToken string, userID uint, deviceName string) error
+	SavePhoto(uri string, userID uint64) error
+	DeleteUser(user *xodb.User) error
+	DeletePermanently(user *xodb.User) error
+	GetCredentialByRefreshToken(refreshToken string, deviceName string) (*xodb.Credential, error)
+	GetUserByID(userID uint) (*xodb.User, error)
 }
 
 //AuthStorer authentication storer
@@ -50,7 +54,7 @@ func (s AuthStorer) Create(_ string, attr authboss.Attributes) error {
 func (s AuthStorer) Put(key string, attr authboss.Attributes) error {
 	user, err := s.dbHelper.GetUserByEmail(key)
 	if err != nil {
-		logrus.WithError(err).Errorln("cannot bind attribute to user")
+		logrus.WithError(err).Errorln("cannot save/update user")
 		return err
 	}
 
@@ -65,7 +69,7 @@ func (s AuthStorer) Put(key string, attr authboss.Attributes) error {
 	return nil
 }
 
-//Get returns user by key parameter
+//Get returns user by email parameter
 func (s AuthStorer) Get(key string) (result interface{}, err error) {
 	user, err := s.dbHelper.GetUserByEmail(key)
 	if err != nil {
@@ -125,11 +129,11 @@ func (s AuthStorer) DeletePermanently(user *xodb.User) error {
 }
 
 //SaveCredential saves credential with refresh token and key and device name
-func (s AuthStorer) SaveCredential(refreshToken, key, deviceName string) error {
+func (s AuthStorer) SaveCredential(refreshToken string, userID uint, deviceName string) error {
 
 	credential := &xodb.Credential{
 		RefreshToken: refreshToken,
-		Email:        key,
+		UserID:       userID,
 		DeviceName:   deviceName,
 	}
 
@@ -146,9 +150,9 @@ func (s AuthStorer) GetCredentialByRefreshToken(refreshToken string, deviceName 
 }
 
 // SavePhoto saves user photo to db
-func (s AuthStorer) SavePhoto(name string, userID uint) error {
+func (s AuthStorer) SavePhoto(uri string, userID uint) error {
 	userPhoto := &xodb.UserPhoto{
-		PhotoURI: name,
+		PhotoURI: uri,
 		UserID:   userID,
 	}
 

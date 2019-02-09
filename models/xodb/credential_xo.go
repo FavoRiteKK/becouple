@@ -12,7 +12,7 @@ type Credential struct {
 	CredID       uint   `json:"cred_id"`       // cred_id
 	DeviceName   string `json:"device_name"`   // device_name
 	RefreshToken string `json:"refresh_token"` // refresh_token
-	Email        string `json:"email"`         // email
+	UserID       uint   `json:"user_id"`       // user_id
 	Deleted      bool   `json:"deleted"`       // deleted
 
 	// xo fields
@@ -38,21 +38,28 @@ func (c *Credential) Insert(db XODB) error {
 		return errors.New("insert failed: already exists")
 	}
 
-	// sql insert query, primary key must be provided
+	// sql insert query, primary key provided by autoincrement
 	const sqlstr = `INSERT INTO app_mvp_dating.credentials (` +
-		`device_name, refresh_token, email, deleted` +
+		`device_name, refresh_token, user_id, deleted` +
 		`) VALUES (` +
-		`?, ?, ?, ?, ?` +
+		`?, ?, ?, ?` +
 		`)`
 
 	// run query
-	XOLog(sqlstr, c.DeviceName, c.RefreshToken, c.Email, c.Deleted)
-	_, err = db.Exec(sqlstr, c.CredID, c.DeviceName, c.RefreshToken, c.Email, c.Deleted)
+	XOLog(sqlstr, c.DeviceName, c.RefreshToken, c.UserID, c.Deleted)
+	res, err := db.Exec(sqlstr, c.DeviceName, c.RefreshToken, c.UserID, c.Deleted)
 	if err != nil {
 		return err
 	}
 
-	// set existence
+	// retrieve id
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	// set primary key and existence
+	c.CredID = uint(id)
 	c._exists = true
 
 	return nil
@@ -74,12 +81,12 @@ func (c *Credential) Update(db XODB) error {
 
 	// sql query
 	const sqlstr = `UPDATE app_mvp_dating.credentials SET ` +
-		`device_name = ?, refresh_token = ?, email = ?, deleted = ?` +
+		`device_name = ?, refresh_token = ?, user_id = ?, deleted = ?` +
 		` WHERE cred_id = ?`
 
 	// run query
-	XOLog(sqlstr, c.DeviceName, c.RefreshToken, c.Email, c.Deleted, c.CredID)
-	_, err = db.Exec(sqlstr, c.DeviceName, c.RefreshToken, c.Email, c.Deleted, c.CredID)
+	XOLog(sqlstr, c.DeviceName, c.RefreshToken, c.UserID, c.Deleted, c.CredID)
+	_, err = db.Exec(sqlstr, c.DeviceName, c.RefreshToken, c.UserID, c.Deleted, c.CredID)
 	return err
 }
 
@@ -130,7 +137,7 @@ func CredentialByCredID(db XODB, credID uint) (*Credential, error) {
 
 	// sql query
 	const sqlstr = `SELECT ` +
-		`cred_id, device_name, refresh_token, email, deleted+0 ` +
+		`cred_id, device_name, refresh_token, user_id, deleted ` +
 		`FROM app_mvp_dating.credentials ` +
 		`WHERE cred_id = ?`
 
@@ -140,7 +147,7 @@ func CredentialByCredID(db XODB, credID uint) (*Credential, error) {
 		_exists: true,
 	}
 
-	err = db.QueryRow(sqlstr, credID).Scan(&c.CredID, &c.DeviceName, &c.RefreshToken, &c.Email, &c.Deleted)
+	err = db.QueryRow(sqlstr, credID).Scan(&c.CredID, &c.DeviceName, &c.RefreshToken, &c.UserID, &c.Deleted)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +161,7 @@ func CredentialByRefreshToken(db XODB, refreshToken string, deviceName string) (
 
 	// sql query
 	const sqlstr = `SELECT ` +
-		`cred_id, device_name, refresh_token, email, deleted+0 ` +
+		`cred_id, device_name, refresh_token, user_id, deleted+0 ` +
 		`FROM app_mvp_dating.credentials ` +
 		`WHERE refresh_token = ? AND device_name = ?`
 
@@ -164,7 +171,7 @@ func CredentialByRefreshToken(db XODB, refreshToken string, deviceName string) (
 		_exists: true,
 	}
 
-	err = db.QueryRow(sqlstr, refreshToken, deviceName).Scan(&c.CredID, &c.DeviceName, &c.RefreshToken, &c.Email, &c.Deleted)
+	err = db.QueryRow(sqlstr, refreshToken, deviceName).Scan(&c.CredID, &c.DeviceName, &c.RefreshToken, &c.UserID, &c.Deleted)
 	if err != nil {
 		return nil, err
 	}
